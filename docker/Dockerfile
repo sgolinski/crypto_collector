@@ -16,10 +16,6 @@ RUN chmod +x /usr/local/bin/install-php-extensions && \
     install-php-extensions sockets gd
 
 RUN docker-php-ext-install mysqli pdo pdo_mysql && docker-php-ext-enable mysqli
-ADD /src /var/www/html
-ADD /index.php index.php
-ADD /start.php start.php
-ADD /.env .env
 
 RUN apk add --no-cache chromium chromium-chromedriver
 ARG GECKODRIVER_VERSION=0.30.0
@@ -27,19 +23,12 @@ RUN wget -q https://github.com/mozilla/geckodriver/releases/download/v$GECKODRIV
     tar -zxf geckodriver-v$GECKODRIVER_VERSION-linux64.tar.gz -C /usr/bin; \
     rm geckodriver-v$GECKODRIVER_VERSION-linux64.tar.gz
 
-RUN echo 'SetEnv MYSQL_DB_CONNECTION ${MYSQL_DB_CONNECTION}' >> /etc/apache2/conf-enabled/environment.conf
-RUN echo 'SetEnv MYSQL_DB_NAME ${MYSQL_DB_NAME}' >> /etc/apache2/conf-enabled/environment.conf
-RUN echo 'SetEnv MYSQL_USER ${MYSQL_USER}' >> /etc/apache2/conf-enabled/environment.conf
-RUN echo 'SetEnv MYSQL_PASSWORD ${MYSQL_PASSWORD}' >> /etc/apache2/conf-enabled/environment.conf
-RUN echo 'SetEnv SITE_URL ${SITE_URL}' >> /etc/apache2/conf-enabled/environment.conf
-RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf &&\
-    a2enmod rewrite &&\
-    a2enmod headers &&\
-    a2enmod rewrite &&\
-    a2dissite 000-default &&\
-    service apache2 restart
-EXPOSE 80
-EXPOSE 443
+RUN echo 'SetEnv MYSQL_DB_CONNECTION ${MYSQL_DB_CONNECTION}'
+RUN echo 'SetEnv MYSQL_DB_NAME ${MYSQL_DB_NAME}'
+RUN echo 'SetEnv MYSQL_USER ${MYSQL_USER}'
+RUN echo 'SetEnv MYSQL_PASSWORD ${MYSQL_PASSWORD}'
+RUN echo 'SetEnv SITE_URL ${SITE_URL}'
+
 
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"\
    && php composer-setup.php --install-dir=$(pwd) --filename=composer\
