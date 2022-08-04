@@ -1,0 +1,40 @@
+version: "3.7"
+
+services:
+  php-apache:
+    build:
+      dockerfile: docker/Dockerfile
+      context: ./..
+    ports:
+      - 80:80
+      - 8080:80
+    volumes:
+      - ../:/var/www/html
+    extra_hosts:
+      - "alerts.local:127.0.0.1"
+    hostname: alerts.local
+    domainname: local
+    restart: always
+    links:
+      - db-mysql
+    depends_on:
+      - db-mysql
+
+  db-mysql:
+    image: mysql:latest
+    ports:
+      - "3306:3306"
+    working_dir: /application
+    environment:
+      MYSQL_ROOT_PASSWORD: alerts
+      MYSQL_DB_CONNECTION: alerts
+      MYSQL_DB_NAME: alerts
+      MYSQL_USER: alerts
+      MYSQL_PASSWORD: alerts
+      SITE_URL: http://localhost
+    volumes:
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/1.sql
+    restart: always
+
+
+
