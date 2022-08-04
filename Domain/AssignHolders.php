@@ -14,9 +14,12 @@ use App\Domain\Entity\Urls;
 use App\Domain\Query\AllCryptocurrenciesNotCompleteQuery;
 use App\Domain\QueryHandler\AllCryptocurrenciesNotCompleteQueryHandler;
 use InvalidArgumentException;
+use Symfony\Component\Panther\Client as PantherClient;
 
 class AssignHolders extends CrawlerDexTracker implements Crawler
 {
+    private PantherClient $client;
+
     public function invoke(): void
     {
         $this->completeDataForCryptocurrencies();
@@ -61,8 +64,9 @@ class AssignHolders extends CrawlerDexTracker implements Crawler
 
     protected function ensureNumberOfHoldersIsBiggerThen(
         CryptocurrencyId $id,
-        int $holders
-    ): void {
+        int              $holders
+    ): void
+    {
         if ($holders < Holders::MIN_AMOUNT_HOLDERS) {
             $assignHoldersCommand = new AssignToBlackListCommand($id);
             $assignHoldersCommandHandler = new  AssignToBlackListCommandHandler($this->cryptocurrencyRepository);
@@ -70,5 +74,17 @@ class AssignHolders extends CrawlerDexTracker implements Crawler
 
             throw new InvalidArgumentException('Expected number of holders it to low');
         }
+    }
+
+    protected function getCrawlerForWebsite(
+        string $url
+    ): void
+    {
+        $this->client = PantherClient::createChromeClient();
+        $this->client->start();
+        $this->client->get($url);
+        usleep(30000);
+        $this->client->refreshCrawler();
+        usleep(30000);
     }
 }

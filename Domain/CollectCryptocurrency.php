@@ -28,9 +28,12 @@ use Facebook\WebDriver\Exception\UnexpectedTagNameException;
 use Facebook\WebDriver\Remote\RemoteWebElement;
 use Facebook\WebDriver\WebDriverBy;
 use InvalidArgumentException;
+use Symfony\Component\Panther\Client as PantherClient;
 
 class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
 {
+    private PantherClient $client;
+
     public function invoke(): void
     {
         try {
@@ -96,7 +99,8 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
 
     private function createCryptocurrencyFrom(
         ?ArrayIterator $webElements
-    ): void {
+    ): void
+    {
         foreach ($webElements as $webElement) {
             try {
                 assert($webElement instanceof RemoteWebElement);
@@ -165,7 +169,8 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
     private function ensurePriceIsHighEnough(
         Chain $chain,
         Price $price
-    ): void {
+    ): void
+    {
         if ($price->asFloat() < Currency::ALLOWED_PRICE_PER_TOKEN[$chain->__toString()]) {
             throw new InvalidArgumentException('Price is not high enough');
         }
@@ -173,9 +178,22 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
 
     private function ensureTokenNameIsNotBlacklisted(
         string $name
-    ): void {
+    ): void
+    {
         if (in_array($name, NAMES::BLACKLISTED_NAMES_FOR_CRYPTOCURRENCIES)) {
             throw new InvalidArgumentException('Currency is on the blacklist');
         }
+    }
+
+    protected function getCrawlerForWebsite(
+        string $url
+    ): void
+    {
+        $this->client = PantherClient::createChromeClient();
+        $this->client->start();
+        $this->client->get($url);
+        usleep(30000);
+        $this->client->refreshCrawler();
+        usleep(30000);
     }
 }
