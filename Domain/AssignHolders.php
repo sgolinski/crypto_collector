@@ -15,6 +15,7 @@ use App\Domain\Query\AllCryptocurrenciesNotCompleteQuery;
 use App\Domain\QueryHandler\AllCryptocurrenciesNotCompleteQueryHandler;
 use InvalidArgumentException;
 use Symfony\Component\Panther\Client as PantherClient;
+use Symfony\Component\Process\Exception\RuntimeException;
 
 class AssignHolders extends CrawlerDexTracker implements Crawler
 {
@@ -31,14 +32,19 @@ class AssignHolders extends CrawlerDexTracker implements Crawler
         foreach ($tokens as $notCompletedToken) {
             try {
                 $url = Url::fromString(Urls::URL_TOKEN . $notCompletedToken->address());
-                $this->getCrawlerForWebsite($url);
+                try {
+                    $this->getCrawlerForWebsite($url->__toString());
+                } catch (RuntimeException $exception) {
+                    $this->client->close();
+                    $this->client->restart();
+                    $this->getCrawlerForWebsite($url->__toString());
+                }
                 $holdersString = $this->client->getCrawler()
                     ->filter('#ContentPlaceHolder1_tr_tokenHolders > div > div.col-md-8 > div > div')
                     ->getText();
                 $holdersNumber = (int)str_replace(',', "", explode(' ', $holdersString)[0]);
                 $this->ensureNumberOfHoldersIsBiggerThen($notCompletedToken->id(), $holdersNumber);
                 $holders = Holders::fromInt($holdersNumber);
-                var_dump($holders);
                 $this->emmitCryptocurrencyHoldersWhereAssigned($notCompletedToken->id(), $holders);
             } catch (InvalidArgumentException $exception) {
                 continue;

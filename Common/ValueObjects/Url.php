@@ -22,4 +22,5 @@ class Url
     {
         return $this->url;
     }
+
 }
