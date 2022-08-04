@@ -1,0 +1,26 @@
+{
+    "name": "szymon/crapper",
+    "autoload": {
+        "psr-4": {
+            "App\\": "./"
+        }
+    },
+    "authors": [
+        {
+            "name": "sgolinski",
+            "email": "simon.golinski@gmail.com"
+        }
+    ],
+    "require": {
+        "symfony/http-foundation": "^6.1",
+        "symfony/validator": "^6.1",
+        "elasticsearch/elasticsearch": "^8.3",
+        "ramsey/uuid": "^4.3",
+        "predis/predis": "^2.0",
+        "zumba/json-serializer": "^3.0",
+        "symfony/panther": "^2.0",
+        "ext-pdo": "*",
+        "ext-sockets": "*",
+        "alek13/slack": "^2.2"
+    }
+}
