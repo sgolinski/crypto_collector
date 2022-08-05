@@ -22,13 +22,14 @@ use App\Domain\Query\CryptocurrencyQueryByName;
 use App\Domain\QueryHandler\CryptocurrencyQueryHandlerByName;
 use App\Factory;
 use ArrayIterator;
+use Elastic\Transport\Exception\RuntimeException;
 use Exception;
 use Facebook\WebDriver\Exception\NoSuchElementException;
 use Facebook\WebDriver\Exception\UnexpectedTagNameException;
 use Facebook\WebDriver\Remote\RemoteWebElement;
 use Facebook\WebDriver\WebDriverBy;
 use InvalidArgumentException;
-use Symfony\Component\Panther\Client as PantherClient;
+
 
 class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
 {
@@ -46,6 +47,8 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
             echo $exception->getMessage() . PHP_EOL;
             $this->client->close();
             $this->client->quit();
+            sleep(5);
+            $this->invoke();
         }
     }
 
@@ -53,13 +56,18 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
     {
         for ($i = 0; $i < 100; $i++) {
             echo 'Start getting content ' . date("F j, Y, g:i:s a") . PHP_EOL;
-            $data = $this->getElementsFromWebsite();
-            $this->createCryptocurrencyFrom($data);
-            $nextPage = $this->client
-                ->findElement(WebDriverBy::cssSelector(ScriptsJs::BUTTON_SELECTOR));
-            usleep(3000);
-            $nextPage->click();
-            $this->client->refreshCrawler();
+            try {
+                $data = $this->getElementsFromWebsite();
+                $this->createCryptocurrencyFrom($data);
+                $nextPage = $this->client
+                    ->findElement(WebDriverBy::cssSelector(ScriptsJs::BUTTON_SELECTOR));
+                usleep(3000);
+                $nextPage->click();
+                $this->client->refreshCrawler();
+            } catch (Exception) {
+                $this->client->reload();
+                continue;
+            }
         }
     }
 
