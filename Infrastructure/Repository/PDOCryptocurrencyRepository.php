@@ -156,6 +156,7 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
             return null;
         }
 
+
         $cryptocurrency_id = null;
 
         if (isset($result['cryptocurrency_id'])) {
@@ -195,13 +196,13 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
         if (isset($result['occured_on'])) {
             $created = new DateTimeImmutable($result['occured_on']);
         }
-        $isComplete = null;
+        $isComplete = false;
         if (isset($result['isComplete'])) {
-            $isComplete = $result['isComplete'];
+            $isComplete = (bool)$result['isComplete'];
         }
-        $isBlacklisted = null;
+        $isBlacklisted = false;
         if (isset($result['isBlacklisted'])) {
-            $isBlacklisted = $result['isBlacklisted'];
+            $isBlacklisted = (bool)$result['isBlacklisted'];
         }
 
         $cryptocurrency = Cryptocurrency::create($cryptocurrency_id);

@@ -157,4 +157,29 @@ class RedisCryptocurrencyRepository implements CryptocurrencyRepository
 
         return $cryptocurrency;
     }
+
+    public function updateHolders(CryptocurrencyId $id, Holders $holders)
+    {
+        // TODO: Implement updateHolders() method.
+    }
+
+    public function findAllNotComplete(): array
+    {
+        // TODO: Implement findAllNotComplete() method.
+    }
+
+    public function addToBlackList(CryptocurrencyId $id): void
+    {
+        // TODO: Implement addToBlackList() method.
+    }
+
+    public function updateAlert(CryptocurrencyId $id): void
+    {
+        // TODO: Implement updateAlert() method.
+    }
+
+    public function findAllCompletedNotSent(): array
+    {
+        // TODO: Implement findAllCompletedNotSent() method.
+    }
 }
