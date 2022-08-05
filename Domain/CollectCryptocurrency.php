@@ -42,7 +42,6 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
             $this->changeOnWebsiteToShowMoreRecords();
             sleep(1);
             $this->scrappingData();
-            $this->client->restart();
         } catch (Exception $exception) {
             echo $exception->getMessage() . PHP_EOL;
             $this->client->close();
