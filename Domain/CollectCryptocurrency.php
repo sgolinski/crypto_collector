@@ -32,13 +32,12 @@ use Symfony\Component\Panther\Client as PantherClient;
 
 class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
 {
-    private PantherClient $client;
 
     public function invoke(): void
     {
         try {
             echo "Start crawling " . date("F j, Y, g:i:s a") . PHP_EOL;
-            $this->getCrawlerForWebsite(Urls::URL);
+            $this->startClient(Urls::URL);
             $this->client->executeScript(ScriptsJs::SCRIPT);
             $this->changeOnWebsiteToShowMoreRecords();
             sleep(1);
@@ -136,7 +135,6 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
         }
     }
 
-
     private function findCryptocurrencyBy(Name $name): ?Cryptocurrency
     {
         $cryptocurrencyQuery = new CryptocurrencyQueryByName($name);
@@ -185,15 +183,4 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
         }
     }
 
-    protected function getCrawlerForWebsite(
-        string $url
-    ): void
-    {
-        $this->client = PantherClient::createChromeClient();
-        $this->client->start();
-        $this->client->get($url);
-        usleep(30000);
-        $this->client->refreshCrawler();
-        usleep(30000);
-    }
 }

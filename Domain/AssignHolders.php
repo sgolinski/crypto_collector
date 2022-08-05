@@ -19,7 +19,6 @@ use Symfony\Component\Process\Exception\RuntimeException;
 
 class AssignHolders extends CrawlerDexTracker implements Crawler
 {
-    private PantherClient $client;
 
     public function invoke(): void
     {
@@ -32,13 +31,7 @@ class AssignHolders extends CrawlerDexTracker implements Crawler
         foreach ($tokens as $notCompletedToken) {
             try {
                 $url = Url::fromString(Urls::URL_TOKEN . $notCompletedToken->address());
-                try {
-                    $this->getCrawlerForWebsite($url->__toString());
-                } catch (RuntimeException $exception) {
-                    $this->client->close();
-                    $this->client->restart();
-                    $this->getCrawlerForWebsite($url->__toString());
-                }
+                $this->startClient($url->__toString());
                 $holdersString = $this->client->getCrawler()
                     ->filter('#ContentPlaceHolder1_tr_tokenHolders > div > div.col-md-8 > div > div')
                     ->getText();
@@ -46,6 +39,8 @@ class AssignHolders extends CrawlerDexTracker implements Crawler
                 $this->ensureNumberOfHoldersIsBiggerThen($notCompletedToken->id(), $holdersNumber);
                 $holders = Holders::fromInt($holdersNumber);
                 $this->emmitCryptocurrencyHoldersWhereAssigned($notCompletedToken->id(), $holders);
+                $this->client->close();
+                $this->client->quit();
             } catch (InvalidArgumentException $exception) {
                 continue;
             }
