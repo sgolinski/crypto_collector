@@ -1,4 +1,3 @@
 */5 * * * * php /mnt/app/public/data_collect/index.php
-* * * * * sleep 20; php /mnt/app/public/send_alerts/index.php
 
 # always remeber the last line of a crontab file must eb an empty line
