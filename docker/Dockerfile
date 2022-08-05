@@ -10,24 +10,21 @@ ENV PANTHER_CHROME_ARGUMENTS='--disable-dev-shm-usage'
 RUN apk add libzip-dev libzip zip libxml2-dev \
     && docker-php-ext-install zip xml
 
+RUN set -ex \&& apk --no-cache add \
+        postgresql-dev
+
+RUN docker-php-ext-install mysqli pdo pdo_mysql pdo_pgsql pgsql && docker-php-ext-enable mysqli
+
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/install-php-extensions && \
     install-php-extensions sockets gd
-
-RUN docker-php-ext-install mysqli pdo pdo_mysql && docker-php-ext-enable mysqli
 
 RUN apk add --no-cache chromium chromium-chromedriver
 ARG GECKODRIVER_VERSION=0.30.0
 RUN wget -q https://github.com/mozilla/geckodriver/releases/download/v$GECKODRIVER_VERSION/geckodriver-v$GECKODRIVER_VERSION-linux64.tar.gz; \
     tar -zxf geckodriver-v$GECKODRIVER_VERSION-linux64.tar.gz -C /usr/bin; \
     rm geckodriver-v$GECKODRIVER_VERSION-linux64.tar.gz
-
-RUN echo 'SetEnv MYSQL_DB_CONNECTION ${MYSQL_DB_CONNECTION}'
-RUN echo 'SetEnv MYSQL_DB_NAME ${MYSQL_DB_NAME}'
-RUN echo 'SetEnv MYSQL_USER ${MYSQL_USER}'
-RUN echo 'SetEnv MYSQL_PASSWORD ${MYSQL_PASSWORD}'
-RUN echo 'SetEnv SITE_URL ${SITE_URL}'
 
 
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"\

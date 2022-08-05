@@ -23,7 +23,7 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
     public function __construct()
     {
         try {
-            $this->db = new PDO("mysql:host=db-mysql;port=3306;dbname=crypto", 'root', 'alerts', array(
+            $this->db = new PDO("pgsql:host=192.168.178.36;port=5432;dbname=crypto", 'root', 'alerts', array(
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8', //after php5.3.6
             ));
@@ -72,7 +72,7 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
 
     public function update($id, $price): void
     {
-        $sql = 'UPDATE single_cryptocurrency SET price = ? AND occured_on = NOW() WHERE  cryptocurrency_id = ? AND  ';
+        $sql = 'UPDATE single_cryptocurrency SET price = ? AND occured_on = NOW() WHERE  cryptocurrency_id = ? AND isBlacklisted = false ';
         $stm = $this->db->prepare($sql);
         $stm->execute();
     }
@@ -101,14 +101,14 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
 
     public function addToBlackList(CryptocurrencyId $id): void
     {
-        $sql = 'UPDATE single_cryptocurrency SET isBlacklisted = 1 WHERE  cryptocurrency_id = ? AND isBlacklisted=0';
+        $sql = 'UPDATE single_cryptocurrency SET isBlacklisted = true WHERE  cryptocurrency_id = ? AND isBlacklisted=false';
         $stm = $this->db->prepare($sql);
         $stm->execute([$id]);
     }
 
     public function updateHolders(CryptocurrencyId $id, Holders $holders)
     {
-        $sql = 'UPDATE single_cryptocurrency SET holders = :holders, occured_on = NOW(), isComplete = 1 WHERE  cryptocurrency_id = :id AND isComplete =0 AND isBlacklisted=0';
+        $sql = 'UPDATE single_cryptocurrency SET holders = :holders, occured_on = NOW(), isComplete = true WHERE  cryptocurrency_id = :id AND isComplete = false AND isBlacklisted=false ';
         $stm = $this->db->prepare($sql);
         $stm->bindParam(':holders', $holders);
         $stm->bindParam(':id', $id);
@@ -117,7 +117,7 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
 
     public function updateAlert(CryptocurrencyId $id): void
     {
-        $sql = 'UPDATE single_cryptocurrency SET isAlertSent =1, occured_on = NOW(), isComplete = 1 WHERE  cryptocurrency_id = :id AND isComplete =1 AND isBlacklisted=0';
+        $sql = 'UPDATE single_cryptocurrency SET isAlertSent =true , occured_on = NOW() WHERE  cryptocurrency_id = :id AND isComplete =true AND isBlacklisted=false ';
         $stm = $this->db->prepare($sql);
         $stm->bindParam(':id', $id);
         $stm->execute();
@@ -126,7 +126,7 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
 
     public function findAllNotComplete(): array
     {
-        $sql = 'SELECT * FROM single_cryptocurrency WHERE isComplete = 0 AND isBlacklisted = 0';
+        $sql = 'SELECT * FROM single_cryptocurrency WHERE isComplete = false AND isBlacklisted = false ';
         $stm = $this->db->prepare($sql);
         $stm->execute();
         return $this->createCollectionFrom($stm->fetchAll());
@@ -134,7 +134,7 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
 
     public function findAllCompletedNotSent(): array
     {
-        $sql = 'SELECT * FROM single_cryptocurrency WHERE isComplete = 1 AND isBlacklisted = 0 AND isAlertSent = 0';
+        $sql = 'SELECT * FROM single_cryptocurrency WHERE isComplete = true AND isBlacklisted = false AND isAlertSent = false';
         $stm = $this->db->prepare($sql);
         $stm->execute();
         return $this->createCollectionFrom($stm->fetchAll());
