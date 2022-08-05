@@ -26,6 +26,7 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
             $this->db = new PDO("mysql:host=192.168.128.2;port=3306;dbname=crypto", 'root', 'alerts', array(
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8', //after php5.3.6
+
             ));
             //$p->exec('SET NAMES utf8');
         } catch (PDOException $e) {

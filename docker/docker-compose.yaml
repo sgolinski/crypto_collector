@@ -1,5 +1,9 @@
 version: "3.7"
 
+networks:
+  crawler:
+    external: true
+
 services:
   php-cli:
     build:
@@ -8,4 +12,7 @@ services:
     volumes:
       - ../:/var/www/html
     restart: always
+    networks:
+        - crawler
+
 

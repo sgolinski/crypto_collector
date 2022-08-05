@@ -8,6 +8,7 @@ use App\Infrastructure\Repository\PDOCryptocurrencyRepository;
 abstract class CrawlerDexTracker
 {
     protected CryptocurrencyRepository $cryptocurrencyRepository;
+    protected PantherClient $client;
 
     public function __construct(PDOCryptocurrencyRepository $cryptocurrencyRepository)
     {
