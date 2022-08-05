@@ -45,8 +45,6 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
             $this->client->restart();
         } catch (Exception $exception) {
             echo $exception->getMessage() . PHP_EOL;
-            $this->client->restart();
-        } finally {
             $this->client->close();
             $this->client->quit();
         }
@@ -56,7 +54,6 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
     {
         for ($i = 0; $i < 100; $i++) {
             echo 'Start getting content ' . date("F j, Y, g:i:s a") . PHP_EOL;
-            $this->client->refreshCrawler();
             $data = $this->getElementsFromWebsite();
             $this->createCryptocurrencyFrom($data);
             $nextPage = $this->client
