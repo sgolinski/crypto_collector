@@ -39,9 +39,9 @@ class AssignHolders extends CrawlerDexTracker implements Crawler
                 $this->ensureNumberOfHoldersIsBiggerThen($notCompletedToken->id(), $holdersNumber);
                 $holders = Holders::fromInt($holdersNumber);
                 $this->emmitCryptocurrencyHoldersWhereAssigned($notCompletedToken->id(), $holders);
+            } catch (InvalidArgumentException $exception) {
                 $this->client->close();
                 $this->client->quit();
-            } catch (InvalidArgumentException $exception) {
                 continue;
             }
         }
