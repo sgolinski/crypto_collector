@@ -1,13 +1,13 @@
 build:
-	docker-compose -p crypto_collector -f docker/docker-compose.yaml build --no-cache
+	docker-compose -p crypto_collector_without_mysql -f docker/docker-compose.yaml build --no-cache
 
 startup:
-	docker-compose -p crypto_collector -f docker/docker-compose.yaml up -d
+	docker-compose -p crypto_collector_without_mysql -f docker/docker-compose.yaml up -d
 
 stop:
-	docker-compose -p crypto_collector -f docker/docker-compose.yaml down --remove-orphans
+	docker-compose -p crypto_collector_without_mysql -f docker/docker-compose.yaml down --remove-orphans
 
 composer_install:
-	docker-compose -p crypto_collector -f docker/docker-compose.yaml run php-cli composer update
+	docker-compose -p crypto_collector_without_mysql -f docker/docker-compose.yaml run php-cli composer update
 
 install: build composer_install

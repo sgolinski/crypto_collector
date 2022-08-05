@@ -1,7 +1,4 @@
 version: "3.7"
-networks:
-  crawler:
-    driver: "bridge"
 
 services:
   php-cli:
@@ -11,27 +8,4 @@ services:
     volumes:
       - ../:/var/www/html
     restart: always
-    links:
-      - db-mysql
-    depends_on:
-      - db-mysql
-    networks:
-      - crawler
 
-  db-mysql:
-    image: mysql:latest
-    ports:
-      - "3306:3306"
-    working_dir: /application
-    environment:
-      MYSQL_ROOT_PASSWORD: alerts
-      MYSQL_DB_CONNECTION: alerts
-      MYSQL_DB_NAME: alerts
-      MYSQL_USER: alerts
-      MYSQL_PASSWORD: alerts
-      SITE_URL: http://localhost
-    volumes:
-      - ./scripts/init.sql:/docker-entrypoint-initdb.d/1.sql
-    restart: always
-    networks:
-      - crawler
