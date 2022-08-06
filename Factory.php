@@ -6,6 +6,7 @@ use Facebook\WebDriver\WebDriverElement;
 use Facebook\WebDriver\WebDriverSelect;
 use Maknz\Slack\Client as SlackClient;
 use Maknz\Slack\Message;
+use Symfony\Component\Panther\Client;
 use Symfony\Component\Panther\DomCrawler\Crawler;
 
 
@@ -19,12 +20,13 @@ class Factory
         WebDriverElement $element
     ): WebDriverSelect
     {
+        echo 'tworzy';
         return new WebDriverSelect($element);
     }
 
-    public static function createCrawlerService(): Crawler
+    public static function createPantherClient(): Client
     {
-        return new Crawler();
+        return Client::createChromeClient();
     }
 
     public static function createSlackMessage(): Message

@@ -8,7 +8,7 @@ require './vendor/autoload.php';
 
 $repository = new PDOCryptocurrencyRepository();
 
-$application = new CollectCryptocurrency($repository);
+$application = new \App\Domain\CollectCrypto($repository, \App\Factory::createPantherClient());
 $application->invoke();
 //$name = Name::fromString('fnd');
 

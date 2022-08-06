@@ -68,6 +68,7 @@ class WebDriverSelect implements WebDriverSelectInterface
 
     public function selectByIndex($index)
     {
+      
         foreach ($this->getOptions() as $option) {
             if ($option->getAttribute('index') === (string) $index) {
                 $this->selectOption($option);
@@ -75,7 +76,7 @@ class WebDriverSelect implements WebDriverSelectInterface
                 return;
             }
         }
-
+        echo 'błąd select by index';
         throw new NoSuchElementException(sprintf('Cannot locate option with index: %d', $index));
     }
 

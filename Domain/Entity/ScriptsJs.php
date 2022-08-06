@@ -4,14 +4,6 @@ namespace App\Domain\Entity;
 
 class ScriptsJs
 {
-    public const SCRIPT = <<<EOF
-var selectedA = document.querySelector('#selectDex');
-var divWithDexList = document.querySelector('#selectDexButton');
-var select = document.getElementById('ContentPlaceHolder1_ddlRecordsPerPage');
-
-selectedA.click();
-divWithDexList.querySelector('#selectDexButton > a:nth-child(5) > img').click();
-EOF;
     public const INDEX_OF_SHOWN_ROWS = 3;
     public const CONTENT_SELECTOR_TABLE = '#content > div.container.space-bottom-2 > div > div.card-body';
     public const CONTENT_SELECTOR_TABLE_BODY = 'table.table-hover > tbody';

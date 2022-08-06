@@ -22,7 +22,6 @@ use App\Domain\Query\CryptocurrencyQueryByName;
 use App\Domain\QueryHandler\CryptocurrencyQueryHandlerByName;
 use App\Factory;
 use ArrayIterator;
-use Elastic\Transport\Exception\RuntimeException;
 use Exception;
 use Facebook\WebDriver\Exception\NoSuchElementException;
 use Facebook\WebDriver\Exception\UnexpectedTagNameException;
@@ -30,38 +29,35 @@ use Facebook\WebDriver\Remote\RemoteWebElement;
 use Facebook\WebDriver\WebDriverBy;
 use InvalidArgumentException;
 
-
 class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
 {
-
     public function invoke(): void
     {
         try {
             echo "Start crawling " . date("F j, Y, g:i:s a") . PHP_EOL;
             $this->startClient(Urls::URL);
-            $this->client->executeScript(ScriptsJs::SCRIPT);
             $this->changeOnWebsiteToShowMoreRecords();
-            sleep(1);
+            usleep(3000);
             $this->scrappingData();
         } catch (Exception $exception) {
             echo $exception->getMessage() . PHP_EOL;
             $this->client->close();
             $this->client->quit();
-            sleep(5);
             $this->invoke();
         }
     }
 
     private function scrappingData(): void
     {
-        for ($i = 0; $i < 100; $i++) {
-            echo 'Start getting content ' . date("F j, Y, g:i:s a") . PHP_EOL;
+        for ($i = 0; $i < 200; $i++) {
+            echo 'Start getting content for page ' . $i . ' ' . date("F j, Y, g:i:s a") . PHP_EOL;
             try {
                 $data = $this->getElementsFromWebsite();
+                $this->client->takeScreenshot('page' . $i . '.png');
                 $this->createCryptocurrencyFrom($data);
+                echo 'Finish getting content for page ' . $i . ' ' . date("F j, Y, g:i:s a") . PHP_EOL;
                 $nextPage = $this->client
                     ->findElement(WebDriverBy::cssSelector(ScriptsJs::BUTTON_SELECTOR));
-                usleep(3000);
                 $nextPage->click();
                 $this->client->refreshCrawler();
             } catch (Exception) {
@@ -75,10 +71,8 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
     {
         try {
             $selectRows = $this->client->findElement(WebDriverBy::id(ScriptsJs::SELECTOR_SELECT_MORE_RECORDS));
-            usleep(30000);
             $webDriverSelect = Factory::createWebDriverSelect($selectRows);
             $webDriverSelect->selectByIndex(ScriptsJs::INDEX_OF_SHOWN_ROWS);
-            usleep(30000);
         } catch (NoSuchElementException $exception) {
             echo $exception->getMessage();
         } catch (UnexpectedTagNameException $e) {
@@ -88,6 +82,8 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
 
     private function getElementsFromWebsite(): ?ArrayIterator
     {
+        $this->client->refreshCrawler();
+        usleep(1000);
         try {
             $elements = $this->client->getCrawler()
                 ->filter(ScriptsJs::CONTENT_SELECTOR_TABLE)
@@ -110,15 +106,23 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
                 $information = $webElement
                     ->findElement(WebDriverBy::cssSelector(ScriptsJs::INFORMATION_SELECTOR))
                     ->getText();
+
                 $service = Information::fromString($information);
+
                 $chain = $service->getChain();
+
                 $this->ensureIsAllowedChain($chain);
+
                 $price = $service->getPrice();
+
                 $this->ensurePriceIsHighEnough($chain, $price);
+
                 $chain = Chain::fromString($chain);
+
                 $name = $webElement
                     ->findElement(WebDriverBy::cssSelector(ScriptsJs::NAME_SELECTOR))
                     ->getText();
+
                 $name = Name::fromString($name);
 
                 $this->ensureTokenNameIsNotBlacklisted($name);
@@ -186,5 +190,4 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
             throw new InvalidArgumentException('Currency is on the blacklist');
         }
     }
-
 }

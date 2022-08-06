@@ -16,7 +16,7 @@ class WebDriverException extends Exception
      * @param mixed $results
      */
     public function __construct($message, $results = null)
-    {
+    { 
         parent::__construct($message);
         $this->results = $results;
     }

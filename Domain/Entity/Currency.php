@@ -13,14 +13,14 @@ class Currency
 
     public const ALLOWED_PRICE_PER_TOKEN =
         [
-            'wbnb' => 10.00,
+            'wbnb' => 8.00,
             'cake' => 760.00,
-            'bnb' => 10.00,
-            'usdc' => 2470.00,
-            'busd' => 2470.00,
-            'usdt' => 2470.00,
-            'fusdt' => 2470.00,
-            'usdp' => 2470.00
+            'bnb' => 8.00,
+            'usdc' => 2522.96,
+            'busd' => 2522.96,
+            'usdt' => 2522.96,
+            'fusdt' => 2522.96,
+            'usdp' => 2522.96
         ];
 
     public function __construct(

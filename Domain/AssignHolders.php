@@ -19,7 +19,6 @@ use Symfony\Component\Process\Exception\RuntimeException;
 
 class AssignHolders extends CrawlerDexTracker implements Crawler
 {
-
     public function invoke(): void
     {
         $this->completeDataForCryptocurrencies();
@@ -66,8 +65,7 @@ class AssignHolders extends CrawlerDexTracker implements Crawler
     protected function ensureNumberOfHoldersIsBiggerThen(
         CryptocurrencyId $id,
         int              $holders
-    ): void
-    {
+    ): void {
         if ($holders < Holders::MIN_AMOUNT_HOLDERS) {
             $assignHoldersCommand = new AssignToBlackListCommand($id);
             $assignHoldersCommandHandler = new  AssignToBlackListCommandHandler($this->cryptocurrencyRepository);
@@ -79,8 +77,7 @@ class AssignHolders extends CrawlerDexTracker implements Crawler
 
     protected function getCrawlerForWebsite(
         string $url
-    ): void
-    {
+    ): void {
         $this->client = PantherClient::createChromeClient();
         $this->client->start();
         $this->client->get($url);
