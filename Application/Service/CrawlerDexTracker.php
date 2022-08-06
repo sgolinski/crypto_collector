@@ -8,6 +8,14 @@ use Symfony\Component\Panther\Client as PantherClient;
 
 abstract class CrawlerDexTracker
 {
+    private $chromeArguments = [
+        '--disable-popup-blocking',
+        '--disable-application-cache',
+        '--disable-web-security',
+        '--start-maximized',
+        '--ignore-certificate-errors',
+        '--headless',
+    ];
     protected CryptocurrencyRepository $cryptocurrencyRepository;
     protected PantherClient $client;
 
@@ -23,7 +31,7 @@ abstract class CrawlerDexTracker
 
     protected function startClient($url): void
     {
-        echo "Start crawling " . date("F j, Y,  H:i:s") . PHP_EOL;
+       echo "Start crawling " . date("F j, Y,  H:i:s") . PHP_EOL;
         $this->client = PantherClient::createChromeClient();
         $this->client->start();
         $this->client->get($url);

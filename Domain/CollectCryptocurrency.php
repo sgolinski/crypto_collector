@@ -12,78 +12,76 @@ use App\Domain\Command\ChangePriceCommand;
 use App\Domain\Command\CryptocurrencyRegisterCommand;
 use App\Domain\CommandHandler\ChangePriceCommandHandler;
 use App\Domain\CommandHandler\CryptocurrencyRegisterCommandHandler;
-use App\Domain\Entity\Currency;
 use App\Domain\Entity\Information;
 use App\Domain\Entity\Names;
 use App\Domain\Entity\ScriptsJs;
 use App\Domain\Entity\Urls;
-use App\Domain\Model\Cryptocurrency;
+use App\Domain\Query\CryptocurrencyQueryByAddress;
 use App\Domain\Query\CryptocurrencyQueryByName;
+use App\Domain\QueryHandler\CryptocurrencyQueryHandlerByAddress;
 use App\Domain\QueryHandler\CryptocurrencyQueryHandlerByName;
-use App\Factory;
 use ArrayIterator;
 use Exception;
-use Facebook\WebDriver\Exception\NoSuchElementException;
-use Facebook\WebDriver\Exception\UnexpectedTagNameException;
 use Facebook\WebDriver\Remote\RemoteWebElement;
 use Facebook\WebDriver\WebDriverBy;
 use InvalidArgumentException;
-use Symfony\Component\Panther\Client as PantherClient;
+
+use Symfony\Component\Panther\DomCrawler\Crawler as RemoteCrawler;
 
 class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
 {
-
     public function invoke(): void
     {
         try {
-            echo "Start crawling " . date("F j, Y, g:i:s a") . PHP_EOL;
             $this->startClient(Urls::URL);
-            $this->client->executeScript(ScriptsJs::SCRIPT);
-            $this->changeOnWebsiteToShowMoreRecords();
-            sleep(1);
+            usleep(3000);
             $this->scrappingData();
-            $this->client->restart();
         } catch (Exception $exception) {
             echo $exception->getMessage() . PHP_EOL;
-            $this->client->restart();
-        } finally {
             $this->client->close();
             $this->client->quit();
+            $this->invoke();
         }
     }
 
     private function scrappingData(): void
     {
+        $lastUri = '';
         for ($i = 0; $i < 100; $i++) {
-            echo 'Start getting content ' . date("F j, Y, g:i:s a") . PHP_EOL;
-            $this->client->refreshCrawler();
-            $data = $this->getElementsFromWebsite();
-            $this->createCryptocurrencyFrom($data);
-            $nextPage = $this->client
-                ->findElement(WebDriverBy::cssSelector(ScriptsJs::BUTTON_SELECTOR));
-            usleep(3000);
-            $nextPage->click();
-            $this->client->refreshCrawler();
+            if ($i % 29 == 0) {
+                sleep(12);
+                $this->client->reload();
+            }
+            if ($lastUri == 'https://bscscan.com/busy') {
+                sleep(12);
+                $this->client->restart();
+            }
+
+            $currentUri = Urls::URL_CON . $i;
+            if ($currentUri === $lastUri) {
+                continue;
+            }
+
+            try {
+                echo 'Start getting content for page ' . $i . ' ' . date("F j, Y, g:i:s a") . PHP_EOL;
+                $data = $this->getElementsFromWebsite($currentUri);
+                if ($data !== null) {
+                    $this->createCryptocurrencyFrom($data);
+                }
+                $lastUri = $this->client->getCrawler()->getUri();
+                echo $lastUri . PHP_EOL;
+                echo 'Finish getting content for page ' . $i . ' ' . date("F j, Y, g:i:s a") . PHP_EOL;
+            } catch (Exception $exception) {
+                echo $exception->getMessage();
+                continue;
+            }
         }
     }
 
-    private function changeOnWebsiteToShowMoreRecords(): void
+    private function getElementsFromWebsite($url): ?ArrayIterator
     {
-        try {
-            $selectRows = $this->client->findElement(WebDriverBy::id(ScriptsJs::SELECTOR_SELECT_MORE_RECORDS));
-            usleep(30000);
-            $webDriverSelect = Factory::createWebDriverSelect($selectRows);
-            $webDriverSelect->selectByIndex(ScriptsJs::INDEX_OF_SHOWN_ROWS);
-            usleep(30000);
-        } catch (NoSuchElementException $exception) {
-            echo $exception->getMessage();
-        } catch (UnexpectedTagNameException $e) {
-            echo $e->getMessage();
-        }
-    }
-
-    private function getElementsFromWebsite(): ?ArrayIterator
-    {
+        $this->client->get($url);
+        $this->client->refreshCrawler();
         try {
             $elements = $this->client->getCrawler()
                 ->filter(ScriptsJs::CONTENT_SELECTOR_TABLE)
@@ -93,6 +91,7 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
         } catch (Exception $exception) {
             echo $exception->getMessage();
         }
+
         return $elements;
     }
 
@@ -103,51 +102,54 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
         foreach ($webElements as $webElement) {
             try {
                 assert($webElement instanceof RemoteWebElement);
-                $information = $webElement
-                    ->findElement(WebDriverBy::cssSelector(ScriptsJs::INFORMATION_SELECTOR))
-                    ->getText();
+                $information = $this->getInformationFrom($webElement);
+
                 $service = Information::fromString($information);
                 $chain = $service->getChain();
-                $this->ensureIsAllowedChain($chain);
                 $price = $service->getPrice();
-                $this->ensurePriceIsHighEnough($chain, $price);
-                $chain = Chain::fromString($chain);
-                $name = $webElement
-                    ->findElement(WebDriverBy::cssSelector(ScriptsJs::NAME_SELECTOR))
-                    ->getText();
+                $name = $this->getNameFrom($webElement);
                 $name = Name::fromString($name);
-
                 $this->ensureTokenNameIsNotBlacklisted($name);
-                $cryptocurrency = $this->findCryptocurrencyBy($name);
+                $cryptocurrencyExist = $this->findCryptocurrencyByName($name);
 
-                if ($cryptocurrency) {
+                if ($cryptocurrencyExist) {
+                    echo 'Token already exist ' . date("F j, Y, g:i:s a") . PHP_EOL;
                     continue;
                 }
 
-                $address = $webElement
-                    ->findElement(WebDriverBy::cssSelector(ScriptsJs::ADDRESS_SELECTOR))
-                    ->getAttribute('href');
+                $address = $this->getAddressFrom($webElement);
                 $address = Address::fromString($address);
+                $this->ensureTokenAddressIsNotinDb($address);
+
+
                 $this->emmitCryptocurrencyRegisterEvent($address, $name, $price, $chain);
-            } catch (InvalidArgumentException) {
+            } catch (InvalidArgumentException $exception) {
                 continue;
             }
         }
     }
 
-    private function findCryptocurrencyBy(Name $name): ?Cryptocurrency
+    private function findCryptocurrencyByName(Name $name): bool
     {
         $cryptocurrencyQuery = new CryptocurrencyQueryByName($name);
         $cryptocurrencyQueryByNameHandler = new CryptocurrencyQueryHandlerByName($this->cryptocurrencyRepository);
-        $cryptocurrency = $cryptocurrencyQueryByNameHandler->__invoke($cryptocurrencyQuery);
-        return $cryptocurrency;
+        return $cryptocurrencyQueryByNameHandler->__invoke($cryptocurrencyQuery);
+    }
+
+    private function findCryptocurrencyByAddress(Address $address): bool
+    {
+        $cryptocurrencyQuery = new CryptocurrencyQueryByAddress($address);
+        $cryptocurrencyQueryByAddressHandler = new CryptocurrencyQueryHandlerByAddress($this->cryptocurrencyRepository);
+        return $cryptocurrencyQueryByAddressHandler->__invoke($cryptocurrencyQuery);
     }
 
     private function emmitCryptocurrencyRegisterEvent(Address $address, Name $name, Price $price, Chain $chain): void
     {
+        echo 'Start emitting event ' . date("F j, Y, g:i:s a") . PHP_EOL;
         $registerCryptocurrencyCommand = new CryptocurrencyRegisterCommand($address, $name, $price, $chain);
         $registerCryptocurrencyCommandHandler = new CryptocurrencyRegisterCommandHandler($this->cryptocurrencyRepository);
         $registerCryptocurrencyCommandHandler->handle($registerCryptocurrencyCommand);
+
     }
 
     private function emmitCryptocurrencyPriceWasChangedEvent(CryptocurrencyId $id, Price $price): void
@@ -157,30 +159,54 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
         $changePriceCommandHandler->handle($changePriceCommand);
     }
 
-    private function ensureIsAllowedChain(Chain $chain): void
-    {
-        if (!in_array($chain->__toString(), NAMES::ALLOWED_NAMES_FOR_CHAINS)) {
-            throw new InvalidArgumentException('Currency not allowed');
-        }
-    }
-
-    private function ensurePriceIsHighEnough(
-        Chain $chain,
-        Price $price
-    ): void
-    {
-        if ($price->asFloat() < Currency::ALLOWED_PRICE_PER_TOKEN[$chain->__toString()]) {
-            throw new InvalidArgumentException('Price is not high enough');
-        }
-    }
 
     private function ensureTokenNameIsNotBlacklisted(
         string $name
     ): void
     {
         if (in_array($name, NAMES::BLACKLISTED_NAMES_FOR_CRYPTOCURRENCIES)) {
-            throw new InvalidArgumentException('Currency is on the blacklist');
+            throw new InvalidArgumentException('Currency is on the blacklist ');
         }
     }
 
+    /**
+     * @param RemoteWebElement $webElement
+     * @return string
+     */
+    private function getNameFrom(RemoteWebElement $webElement): string
+    {
+        return $webElement
+            ->findElement(WebDriverBy::cssSelector(ScriptsJs::NAME_SELECTOR))
+            ->getText();
+    }
+
+    /**
+     * @param RemoteWebElement $webElement
+     * @return string
+     */
+    private function getInformationFrom(RemoteWebElement $webElement): string
+    {
+        return $webElement
+            ->findElement(WebDriverBy::cssSelector(ScriptsJs::INFORMATION_SELECTOR))
+            ->getText();
+    }
+
+    /**
+     * @param RemoteWebElement $webElement
+     * @return string|true|null
+     */
+    private function getAddressFrom(RemoteWebElement $webElement): string|bool|null
+    {
+        return $webElement
+            ->findElement(WebDriverBy::cssSelector(ScriptsJs::ADDRESS_SELECTOR))
+            ->getAttribute('href');
+    }
+
+    private function ensureTokenAddressIsNotinDb(Address $address)
+    {
+        if ($this->findCryptocurrencyByAddress($address)) {
+            echo 'Token already exist ' . date("F j, Y, g:i:s a") . PHP_EOL;
+            throw new InvalidArgumentException('Address already in DB ');
+        }
+    }
 }

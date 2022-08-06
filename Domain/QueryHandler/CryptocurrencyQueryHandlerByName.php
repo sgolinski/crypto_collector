@@ -15,7 +15,7 @@ class CryptocurrencyQueryHandlerByName
         $this->cryptocurrencyRepository = $cryptocurrencyRepository;
     }
 
-    public function __invoke(CryptocurrencyQueryByName $cryptocurrencyQueryByName): ?Cryptocurrency
+    public function __invoke(CryptocurrencyQueryByName $cryptocurrencyQueryByName): bool
     {
         return $this->cryptocurrencyRepository->byName($cryptocurrencyQueryByName->name());
     }

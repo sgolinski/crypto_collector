@@ -7,8 +7,15 @@ COPY /opcache.ini /usr/local/etc/php/conf.d/
 ENV PANTHER_NO_SANDBOX 1
 ENV PANTHER_CHROME_ARGUMENTS='--disable-dev-shm-usage'
 
+ENV PHP_OPCACHE_VALIDATE_TIMESTAMPS="0" \
+    PHP_OPCACHE_MAX_ACCELERATED_FILES="10000" \
+    PHP_OPCACHE_MEMORY_CONSUMPTION="192" \
+    PHP_OPCACHE_MAX_WASTED_PERCENTAGE="10"
+
 RUN apk add libzip-dev libzip zip libxml2-dev \
-    && docker-php-ext-install zip xml
+    && docker-php-ext-install zip xml opcache
+
+COPY /opcache.ini /usr/local/etc/php/conf.d/
 
 RUN set -ex \&& apk --no-cache add \
         postgresql-dev

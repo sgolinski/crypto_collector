@@ -21,11 +21,15 @@ class Names
         'brise', 'rodeo', 'myra', 'prcy', 'dut', 'cls', 'yetic', 'usdc', 'busd', 'usdt', 'fusdt', 'usdp', 'bsc-usd',
         'wnk', 'usdex', 'trx', 'teddy', 'tcg2', 'stg', 'run', 'rmai', 'rgn', 'quint', 'qmall', 'peecat', 'ninky', 'mxm', 'moov',
         'moon', 'mix', 'minecraft', 'mifi', 'mfx', 'luca', 'lovely', 'gst', 'gold', 'gmt', 'fil', 'doxy', 'dome', 'difx',
-        'chess', 'cate', 'btt', 'bnx', 'blst', 'bbox', 'azy', '',
+        'chess', 'cate', 'btt', 'bnx', 'blst', 'bbox', 'azy', '', 'cplt', 'ac', 'boy', 'wofo', 'mland', 'dmv', 'lcdp', 'growbat',
+        'sturdy', 'megg', 'kirby', 'hle', 'amf', 'xki', 'rba', 'tsc', 'rfg', 'fsc', 'dfi', 'bmt', 'fbbc', 'encwta', 'velox', 'snap', 'bund',
+        '$oil', 'gear', 'fusd', 'ubisoft', '$alti', 'nf', 'hub', 'sanshu', 'pxp', 'hotd', 'kgc', 'ila', 'chadcash', 'rev', 'drunk',
+        'apple', 'shintama', 'arc', 'hbc', 'riox', 'fame', 'mmr', 'fs', 'tr', 'mgk', 'fc', 'rw', 'lgbtq', 'dmt', 'zero', 'ii', 'returndao',
+        'saudidoge', 'exm', 'arg', 'gpad', 'nptp', 'lc', 'daisy', 'unim', 'bsquidgrow', 'secret', 'baycdao', 'lup', 'cig', 'goat', 'ante', 'sqt', 'dclub', 'dnl', 'ds', 'penispump', 'lyka',
 
     ];
 
     public const ALLOWED_NAMES_FOR_CHAINS = [
-        'wbnb', 'cake', 'bnb', 'usdc', 'busd', 'usdt', 'fusdt', 'usdp'
+        'wbnb', 'cake', 'bnb', 'usdc', 'busd', 'usdt', 'fusdt', 'usdp', 'bsc-usd'
     ];
 }

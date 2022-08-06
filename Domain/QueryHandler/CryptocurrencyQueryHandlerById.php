@@ -3,10 +3,10 @@
 namespace App\Domain\QueryHandler;
 
 use App\Domain\Model\Cryptocurrency;
-use App\Domain\Query\CryptocurrencyQuery;
+use App\Domain\Query\CryptocurrencyQueryById;
 use App\Infrastructure\Repository\CryptocurrencyRepository;
 
-class CryptocurrencyQueryHandler
+class CryptocurrencyQueryHandlerById
 {
     private CryptocurrencyRepository $cryptocurrencyRepository;
 
@@ -15,7 +15,7 @@ class CryptocurrencyQueryHandler
         $this->cryptocurrencyRepository = $cryptocurrencyRepository;
     }
 
-    public function __invoke(CryptocurrencyQuery $cryptocurrencyQuery): Cryptocurrency
+    public function __invoke(CryptocurrencyQueryById $cryptocurrencyQuery): bool
     {
         return $this->cryptocurrencyRepository->byId($cryptocurrencyQuery->cryptocurrencyId());
     }

@@ -1,11 +1,11 @@
 <?php return array(
     'root' => array(
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
-        'reference' => NULL,
+        'reference' => '2b1aab26c4510f0f01a813c1010a674cb6685dc2',
         'name' => 'szymon/crapper',
         'dev' => true,
     ),
@@ -277,6 +277,15 @@
             'reference' => '2e3b6a4406c2af963c634d7bd0457402b67dcc56',
             'dev_requirement' => false,
         ),
+        'symfony/css-selector' => array(
+            'pretty_version' => 'v6.1.3',
+            'version' => '6.1.3.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../symfony/css-selector',
+            'aliases' => array(),
+            'reference' => '0dd5e36b80e1de97f8f74ed7023ac2b837a36443',
+            'dev_requirement' => false,
+        ),
         'symfony/dependency-injection' => array(
             'pretty_version' => 'v6.1.3',
             'version' => '6.1.3.0',
@@ -467,12 +476,12 @@
             'dev_requirement' => false,
         ),
         'szymon/crapper' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
-            'reference' => NULL,
+            'reference' => '2b1aab26c4510f0f01a813c1010a674cb6685dc2',
             'dev_requirement' => false,
         ),
         'zumba/json-serializer' => array(

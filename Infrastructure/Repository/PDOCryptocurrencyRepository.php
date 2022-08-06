@@ -58,15 +58,13 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
         }
     }
 
-    public function byId(CryptocurrencyId $id): Cryptocurrency
+    public function byId(CryptocurrencyId $id): bool
     {
         $stm = $this->db->prepare(
-            'SELECT * FROM single_cryptocurrency WHERE id = ?'
+            'SELECT name FROM single_cryptocurrency WHERE cryptocurrency_id = :id'
         );
-
-        $stm->execute([$id->id()]);
-
-        return $stm->fetch();
+        $stm->bindParam(':id', $id);
+        return $stm->execute();
     }
 
 
@@ -74,29 +72,41 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
     {
         $sql = 'UPDATE single_cryptocurrency SET price = ? AND occured_on = NOW() WHERE  cryptocurrency_id = ? AND isBlacklisted = false ';
         $stm = $this->db->prepare($sql);
+
         $stm->execute();
     }
 
     public function byComplete($name): mixed
     {
         $sql = 'SELECT isComplete, isBlacklisted FROM single_cryptocurrency WHERE name = ?';
-
         $stm = $this->db->prepare($sql);
-
         $stm->execute([$name]);
 
         return $stm->fetch();
     }
 
-    public function byName(Name $name): ?Cryptocurrency
+    public function byName(Name $name): bool
     {
         $stm = $this->db->prepare(
-            'SELECT * FROM single_cryptocurrency WHERE name = ?'
+            'SELECT cryptocurrency_id FROM single_cryptocurrency WHERE name = :name'
         );
+        $stm->bindParam(':name', $name);
 
-        $stm->execute([$name]);
+        $stm->execute();
 
-        return $this->format($stm->fetch());
+        return $stm->rowCount();
+    }
+
+    public function byAddress(Address $address): bool
+    {
+        $stm = $this->db->prepare(
+            'SELECT cryptocurrency_id FROM single_cryptocurrency WHERE address = :address'
+        );
+        $stm->bindParam(':address', $address);
+
+        $stm->execute();
+
+        return $stm->rowCount();
     }
 
     public function addToBlackList(CryptocurrencyId $id): void
@@ -218,4 +228,6 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
 
         return $cryptocurrency;
     }
+
+
 }
