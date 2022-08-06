@@ -48,11 +48,18 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
 
     private function scrappingData(): void
     {
+        $lastUri = '';
         for ($i = 0; $i < 200; $i++) {
+            $currentUri = $this->client->getCrawler()->getUri() . PHP_EOL;
             echo 'Start getting content for page ' . $i . ' ' . date("F j, Y, g:i:s a") . PHP_EOL;
             try {
                 $data = $this->getElementsFromWebsite();
+                if ($currentUri === $lastUri) {
+                    continue;
+                }
+                echo $this->client->getCrawler()->getUri() . PHP_EOL;
                 $this->createCryptocurrencyFrom($data);
+                $lastUri = $this->client->getCrawler()->getUri() . PHP_EOL;
                 echo 'Finish getting content for page ' . $i . ' ' . date("F j, Y, g:i:s a") . PHP_EOL;
                 $nextPage = $this->client
                     ->findElement(WebDriverBy::cssSelector(ScriptsJs::BUTTON_SELECTOR));

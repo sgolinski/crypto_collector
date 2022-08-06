@@ -13,8 +13,7 @@ ENV PHP_OPCACHE_VALIDATE_TIMESTAMPS="0" \
     PHP_OPCACHE_MAX_WASTED_PERCENTAGE="10"
 
 RUN apk add libzip-dev libzip zip libxml2-dev \
-    && docker-php-ext-install zip xml opcache \
-    && apk del $PHPIZE_DEPS
+    && docker-php-ext-install zip xml opcache
 
 COPY /opcache.ini /usr/local/etc/php/conf.d/
 
