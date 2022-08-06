@@ -122,7 +122,7 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
                 $name = $webElement
                     ->findElement(WebDriverBy::cssSelector(ScriptsJs::NAME_SELECTOR))
                     ->getText();
-
+// potential crypto
                 $name = Name::fromString($name);
 
                 $this->ensureTokenNameIsNotBlacklisted($name);
