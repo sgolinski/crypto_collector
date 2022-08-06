@@ -12,7 +12,6 @@ use App\Domain\Command\ChangePriceCommand;
 use App\Domain\Command\CryptocurrencyRegisterCommand;
 use App\Domain\CommandHandler\ChangePriceCommandHandler;
 use App\Domain\CommandHandler\CryptocurrencyRegisterCommandHandler;
-use App\Domain\Entity\Currency;
 use App\Domain\Entity\Information;
 use App\Domain\Entity\Names;
 use App\Domain\Entity\ScriptsJs;
@@ -102,39 +101,26 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
         foreach ($webElements as $webElement) {
             try {
                 assert($webElement instanceof RemoteWebElement);
-                $information = $webElement
-                    ->findElement(WebDriverBy::cssSelector(ScriptsJs::INFORMATION_SELECTOR))
-                    ->getText();
+
+                $information = $this->getInformationFrom($webElement);
 
                 $service = Information::fromString($information);
-
                 $chain = $service->getChain();
-
-                $this->ensureIsAllowedChain($chain);
-
                 $price = $service->getPrice();
 
-                $this->ensurePriceIsHighEnough($chain, $price);
 
-                $chain = Chain::fromString($chain);
-
-                $name = $webElement
-                    ->findElement(WebDriverBy::cssSelector(ScriptsJs::NAME_SELECTOR))
-                    ->getText();
-// potential crypto
+                $name = $this->getNameFrom($webElement);
                 $name = Name::fromString($name);
-
                 $this->ensureTokenNameIsNotBlacklisted($name);
-                $cryptocurrency = $this->findCryptocurrencyBy($name);
 
-                if ($cryptocurrency) {
+                $cryptocurrencyExist = $this->findCryptocurrencyBy($name);
+
+                if ($cryptocurrencyExist) {
                     continue;
                 }
-
-                $address = $webElement
-                    ->findElement(WebDriverBy::cssSelector(ScriptsJs::ADDRESS_SELECTOR))
-                    ->getAttribute('href');
+                $address = $this->getAddressFrom($webElement);
                 $address = Address::fromString($address);
+
                 $this->emmitCryptocurrencyRegisterEvent($address, $name, $price, $chain);
             } catch (InvalidArgumentException) {
                 continue;
@@ -142,7 +128,7 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
         }
     }
 
-    private function findCryptocurrencyBy(Name $name): ?Cryptocurrency
+    private function findCryptocurrencyBy(Name $name): bool
     {
         $cryptocurrencyQuery = new CryptocurrencyQueryByName($name);
         $cryptocurrencyQueryByNameHandler = new CryptocurrencyQueryHandlerByName($this->cryptocurrencyRepository);
@@ -164,22 +150,6 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
         $changePriceCommandHandler->handle($changePriceCommand);
     }
 
-    private function ensureIsAllowedChain(Chain $chain): void
-    {
-        if (!in_array($chain->__toString(), NAMES::ALLOWED_NAMES_FOR_CHAINS)) {
-            throw new InvalidArgumentException('Currency not allowed');
-        }
-    }
-
-    private function ensurePriceIsHighEnough(
-        Chain $chain,
-        Price $price
-    ): void
-    {
-        if ($price->asFloat() < Currency::ALLOWED_PRICE_PER_TOKEN[$chain->__toString()]) {
-            throw new InvalidArgumentException('Price is not high enough');
-        }
-    }
 
     private function ensureTokenNameIsNotBlacklisted(
         string $name
@@ -188,5 +158,38 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
         if (in_array($name, NAMES::BLACKLISTED_NAMES_FOR_CRYPTOCURRENCIES)) {
             throw new InvalidArgumentException('Currency is on the blacklist');
         }
+    }
+
+    /**
+     * @param RemoteWebElement $webElement
+     * @return string
+     */
+    private function getNameFrom(RemoteWebElement $webElement): string
+    {
+        return $webElement
+            ->findElement(WebDriverBy::cssSelector(ScriptsJs::NAME_SELECTOR))
+            ->getText();
+    }
+
+    /**
+     * @param RemoteWebElement $webElement
+     * @return string
+     */
+    private function getInformationFrom(RemoteWebElement $webElement): string
+    {
+        return $webElement
+            ->findElement(WebDriverBy::cssSelector(ScriptsJs::INFORMATION_SELECTOR))
+            ->getText();
+    }
+
+    /**
+     * @param RemoteWebElement $webElement
+     * @return string|true|null
+     */
+    private function getAddressFrom(RemoteWebElement $webElement): string|bool|null
+    {
+        return $webElement
+            ->findElement(WebDriverBy::cssSelector(ScriptsJs::ADDRESS_SELECTOR))
+            ->getAttribute('href');
     }
 }

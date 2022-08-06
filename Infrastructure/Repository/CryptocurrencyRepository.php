@@ -11,7 +11,7 @@ interface CryptocurrencyRepository
 {
     public function byId(CryptocurrencyId $id): Cryptocurrency;
 
-    public function byName(Name $name): ?Cryptocurrency;
+    public function byName(Name $name): bool;
 
     public function add(Cryptocurrency $cryptocurrency): void;
 

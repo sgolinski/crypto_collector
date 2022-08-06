@@ -9,7 +9,7 @@ use InvalidArgumentException;
 class Information
 {
     public array $information;
-    public Chain $token;
+    public Chain $chain;
     public Price $price;
 
     private function __construct(
@@ -21,7 +21,9 @@ class Information
         $this->ensureInformationAboutPriceIsNotNull($this->information[0]);
         $this->price = $this->extractPriceFrom($this->information[0]);
         $this->ensureInformationAboutTokenIsNotNull($this->information[1]);
-        $this->chain = $this->extractTokenFrom($this->information[1]);
+        $this->chain = $this->extractChainFrom($this->information[1]);
+        $this->ensureIsAllowedChain($this->chain);
+        $this->ensurePriceIsHighEnough($this->chain, $this->price);
     }
 
     public static function fromString(
@@ -63,7 +65,7 @@ class Information
         return Price::fromFloat(round((float)$strPrice, 3));
     }
 
-    private function extractTokenFrom(
+    private function extractChainFrom(
         string $data
     ): Chain {
         return Chain::fromString(strtolower($data));
@@ -82,4 +84,21 @@ class Information
             throw new InvalidArgumentException('Information about token is missing');
         }
     }
+
+    private function ensurePriceIsHighEnough(
+        Chain $chain,
+        Price $price
+    ): void
+    {
+        if ($price->asFloat() < Currency::ALLOWED_PRICE_PER_TOKEN[$chain->__toString()]) {
+            throw new InvalidArgumentException('Price is not high enough');
+        }
+    }
+    private function ensureIsAllowedChain(Chain $chain): void
+    {
+        if (!in_array($chain->__toString(), Names::ALLOWED_NAMES_FOR_CHAINS)) {
+            throw new InvalidArgumentException('Currency not allowed');
+        }
+    }
+
 }

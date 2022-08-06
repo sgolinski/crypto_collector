@@ -88,15 +88,13 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
         return $stm->fetch();
     }
 
-    public function byName(Name $name): ?Cryptocurrency
+    public function byName(Name $name): bool
     {
         $stm = $this->db->prepare(
-            'SELECT * FROM single_cryptocurrency WHERE name = ?'
+            'SELECT cryptocurrency_id FROM single_cryptocurrency WHERE name = ?'
         );
 
-        $stm->execute([$name]);
-
-        return $this->format($stm->fetch());
+        return (bool)$stm->rowCount();
     }
 
     public function addToBlackList(CryptocurrencyId $id): void
