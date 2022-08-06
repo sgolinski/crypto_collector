@@ -53,7 +53,6 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
             echo 'Start getting content for page ' . $i . ' ' . date("F j, Y, g:i:s a") . PHP_EOL;
             try {
                 $data = $this->getElementsFromWebsite();
-                $this->client->takeScreenshot('page' . $i . '.png');
                 $this->createCryptocurrencyFrom($data);
                 echo 'Finish getting content for page ' . $i . ' ' . date("F j, Y, g:i:s a") . PHP_EOL;
                 $nextPage = $this->client

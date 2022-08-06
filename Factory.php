@@ -20,7 +20,6 @@ class Factory
         WebDriverElement $element
     ): WebDriverSelect
     {
-        echo 'tworzy';
         return new WebDriverSelect($element);
     }
 
