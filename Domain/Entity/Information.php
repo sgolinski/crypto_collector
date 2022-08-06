@@ -22,7 +22,8 @@ class Information
         $this->price = $this->extractPriceFrom($this->information[0]);
         $this->ensureInformationAboutTokenIsNotNull($this->information[1]);
         $this->chain = $this->extractChainFrom($this->information[1]);
-    }
+        $this->ensureIsAllowedChain($this->chain);
+        $this->ensurePriceIsHighEnough($this->chain, $this->price);    }
 
     public static function fromString(
         string $information
@@ -80,6 +81,23 @@ class Information
     {
         if ($int === null) {
             throw new InvalidArgumentException('Information about token is missing');
+        }
+    }
+
+    private function ensureIsAllowedChain(Chain $chain): void
+    {
+        if (!in_array($chain->__toString(), Names::ALLOWED_NAMES_FOR_CHAINS)) {
+            throw new InvalidArgumentException('Currency not allowed');
+        }
+    }
+
+    private function ensurePriceIsHighEnough(
+        Chain $chain,
+        Price $price
+    ): void
+    {
+        if ($price->asFloat() < Currency::ALLOWED_PRICE_PER_TOKEN[$chain->__toString()]) {
+            throw new InvalidArgumentException('Price is not high enough');
         }
     }
 }

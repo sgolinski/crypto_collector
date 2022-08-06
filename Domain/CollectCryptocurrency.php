@@ -16,7 +16,9 @@ use App\Domain\Entity\Information;
 use App\Domain\Entity\Names;
 use App\Domain\Entity\ScriptsJs;
 use App\Domain\Entity\Urls;
+use App\Domain\Query\CryptocurrencyQueryByAddress;
 use App\Domain\Query\CryptocurrencyQueryByName;
+use App\Domain\QueryHandler\CryptocurrencyQueryHandlerByAddress;
 use App\Domain\QueryHandler\CryptocurrencyQueryHandlerByName;
 use ArrayIterator;
 use Exception;
@@ -31,7 +33,6 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
     public function invoke(): void
     {
         try {
-            echo "Start crawling " . date("F j, Y, g:i:s a") . PHP_EOL;
             $this->startClient(Urls::URL);
             usleep(3000);
             $this->scrappingData();
@@ -46,8 +47,7 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
     private function scrappingData(): void
     {
         $lastUri = '';
-        for ($i = 0; $i < 200; $i++) {
-
+        for ($i = 0; $i < 100; $i++) {
             if ($i % 29 == 0) {
                 sleep(12);
                 $this->client->reload();
@@ -58,7 +58,6 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
             }
 
             $currentUri = Urls::URL_CON . $i;
-
             if ($currentUri === $lastUri) {
                 continue;
             }
@@ -83,38 +82,11 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
     {
         $this->client->get($url);
         $this->client->refreshCrawler();
-        usleep(1000);
-        $elements = null;
         try {
             $elements = $this->client->getCrawler()
-                ->filterXPath(ScriptsJs::CONTENT_SELECTOR_TABLE_BODY_XPATH_FILTERED_TD6)
-                ->ancestors()
-                ->reduce(
-                    function (RemoteCrawler $node) {
-                        $information = explode(" ", $node->text());
-                        $chain = $information[1];
-                        $price = round((float)$information[0], 4);
-
-                        switch ($chain) {
-                            case'WBNB':
-                                if ($price > 7.0) {
-                                    return $node;
-                                }
-                                return false;
-                            case 'BUSD':
-                            case'USDC':
-                            case 'BSC-USD':
-                            case 'USDT':
-                                if ($price > 2522.96) {
-                                    return $node;
-                                }
-                                return false;
-                            default:
-                        }
-                        return false;
-                    }
-                )
-                ->ancestors()
+                ->filter(ScriptsJs::CONTENT_SELECTOR_TABLE)
+                ->filter(ScriptsJs::CONTENT_SELECTOR_TABLE_BODY)
+                ->children()
                 ->getIterator();
         } catch (Exception $exception) {
             echo $exception->getMessage();
@@ -135,25 +107,21 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
                 $service = Information::fromString($information);
                 $chain = $service->getChain();
                 $price = $service->getPrice();
-                echo 'Start getting name ' . date("F j, Y, g:i:s a") . PHP_EOL;
                 $name = $this->getNameFrom($webElement);
                 $name = Name::fromString($name);
-
                 $this->ensureTokenNameIsNotBlacklisted($name);
-                echo 'Finish getting name ' . date("F j, Y, g:i:s a") . PHP_EOL;
+                $cryptocurrencyExist = $this->findCryptocurrencyByName($name);
 
-                echo 'Start getting existing token ' . date("F j, Y, g:i:s a") . PHP_EOL;
-                $cryptocurrencyExist = $this->findCryptocurrencyBy($name);
-                echo 'Finish getting existing token ' . date("F j, Y, g:i:s a") . PHP_EOL;
-
-                echo 'Start getting existing address ' . date("F j, Y, g:i:s a") . PHP_EOL;
                 if ($cryptocurrencyExist) {
+                    echo 'Token already exist ' . date("F j, Y, g:i:s a") . PHP_EOL;
                     continue;
                 }
+
                 $address = $this->getAddressFrom($webElement);
                 $address = Address::fromString($address);
-                echo 'Finish getting existing address ' . date("F j, Y, g:i:s a") . PHP_EOL;
-                echo 'Start emiting event ' . date("F j, Y, g:i:s a") . PHP_EOL;
+                $this->ensureTokenAddressIsNotinDb($address);
+
+
                 $this->emmitCryptocurrencyRegisterEvent($address, $name, $price, $chain);
             } catch (InvalidArgumentException $exception) {
                 continue;
@@ -161,20 +129,27 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
         }
     }
 
-    private function findCryptocurrencyBy(Name $name): bool
+    private function findCryptocurrencyByName(Name $name): bool
     {
         $cryptocurrencyQuery = new CryptocurrencyQueryByName($name);
         $cryptocurrencyQueryByNameHandler = new CryptocurrencyQueryHandlerByName($this->cryptocurrencyRepository);
-        $cryptocurrency = $cryptocurrencyQueryByNameHandler->__invoke($cryptocurrencyQuery);
-        return $cryptocurrency;
+        return $cryptocurrencyQueryByNameHandler->__invoke($cryptocurrencyQuery);
+    }
+
+    private function findCryptocurrencyByAddress(Address $address): bool
+    {
+        $cryptocurrencyQuery = new CryptocurrencyQueryByAddress($address);
+        $cryptocurrencyQueryByAddressHandler = new CryptocurrencyQueryHandlerByAddress($this->cryptocurrencyRepository);
+        return $cryptocurrencyQueryByAddressHandler->__invoke($cryptocurrencyQuery);
     }
 
     private function emmitCryptocurrencyRegisterEvent(Address $address, Name $name, Price $price, Chain $chain): void
     {
+        echo 'Start emitting event ' . date("F j, Y, g:i:s a") . PHP_EOL;
         $registerCryptocurrencyCommand = new CryptocurrencyRegisterCommand($address, $name, $price, $chain);
         $registerCryptocurrencyCommandHandler = new CryptocurrencyRegisterCommandHandler($this->cryptocurrencyRepository);
         $registerCryptocurrencyCommandHandler->handle($registerCryptocurrencyCommand);
-        echo 'Finish emiting event ' . date("F j, Y, g:i:s a") . PHP_EOL;
+
     }
 
     private function emmitCryptocurrencyPriceWasChangedEvent(CryptocurrencyId $id, Price $price): void
@@ -190,7 +165,7 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
     ): void
     {
         if (in_array($name, NAMES::BLACKLISTED_NAMES_FOR_CRYPTOCURRENCIES)) {
-            throw new InvalidArgumentException('Currency is on the blacklist');
+            throw new InvalidArgumentException('Currency is on the blacklist ');
         }
     }
 
@@ -225,5 +200,13 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
         return $webElement
             ->findElement(WebDriverBy::cssSelector(ScriptsJs::ADDRESS_SELECTOR))
             ->getAttribute('href');
+    }
+
+    private function ensureTokenAddressIsNotinDb(Address $address)
+    {
+        if ($this->findCryptocurrencyByAddress($address)) {
+            echo 'Token already exist ' . date("F j, Y, g:i:s a") . PHP_EOL;
+            throw new InvalidArgumentException('Address already in DB ');
+        }
     }
 }

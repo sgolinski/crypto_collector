@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\Repository;
 
+use App\Common\ValueObjects\Address;
 use App\Common\ValueObjects\CryptocurrencyId;
 use App\Common\ValueObjects\Holders;
 use App\Common\ValueObjects\Name;
@@ -26,4 +27,6 @@ interface CryptocurrencyRepository
     public function updateAlert(CryptocurrencyId $id): void;
 
     public function findAllCompletedNotSent(): array;
+
+    public function byAddress(Address $address): bool;
 }
