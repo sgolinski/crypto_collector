@@ -26,6 +26,7 @@ class AssignHolders extends CrawlerDexTracker implements Crawler
     public function completeDataForCryptocurrencies(): void
     {
         $tokens = $this->getNotCompletedCryptocurrencies();
+
         foreach ($tokens as $notCompletedToken) {
             try {
                 $url = Url::fromString(Urls::URL_TOKEN . $notCompletedToken->address());
@@ -49,8 +50,7 @@ class AssignHolders extends CrawlerDexTracker implements Crawler
     {
         $cryptocurrenciesQuery = new AllCryptocurrenciesNotCompleteQuery();
         $cryptocurrenciesQueryHandler = new AllCryptocurrenciesNotCompleteQueryHandler($this->cryptocurrencyRepository);
-        $notCompletedTokens = $cryptocurrenciesQueryHandler->__invoke($cryptocurrenciesQuery);
-        return $notCompletedTokens;
+        return $cryptocurrenciesQueryHandler->__invoke($cryptocurrenciesQuery);
     }
 
 
@@ -64,7 +64,8 @@ class AssignHolders extends CrawlerDexTracker implements Crawler
     protected function ensureNumberOfHoldersIsBiggerThen(
         CryptocurrencyId $id,
         int              $holders
-    ): void {
+    ): void
+    {
         if ($holders < Holders::MIN_AMOUNT_HOLDERS) {
             $assignHoldersCommand = new AssignToBlackListCommand($id);
             $assignHoldersCommandHandler = new  AssignToBlackListCommandHandler($this->cryptocurrencyRepository);
@@ -74,14 +75,4 @@ class AssignHolders extends CrawlerDexTracker implements Crawler
         }
     }
 
-    protected function getCrawlerForWebsite(
-        string $url
-    ): void {
-        $this->client = PantherClient::createChromeClient();
-        $this->client->start();
-        $this->client->get($url);
-        usleep(30000);
-        $this->client->refreshCrawler();
-        usleep(30000);
-    }
 }

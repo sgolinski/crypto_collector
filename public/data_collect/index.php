@@ -3,7 +3,7 @@
 use App\Domain\CollectCryptocurrency;
 use App\Infrastructure\Repository\PDOCryptocurrencyRepository;
 
-require '/mnt/app/vendor/autoload.php';
+require './vendor/autoload.php';
 
 $repository = new PDOCryptocurrencyRepository();
 
