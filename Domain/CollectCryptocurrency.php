@@ -47,6 +47,7 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
     {
         $lastUri = '';
         for ($i = 0; $i < 200; $i++) {
+
             if ($i % 29 == 0) {
                 sleep(12);
                 $this->client->reload();
@@ -57,6 +58,7 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
             }
 
             $currentUri = Urls::URL_CON . $i;
+
             if ($currentUri === $lastUri) {
                 continue;
             }

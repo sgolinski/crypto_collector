@@ -32,7 +32,7 @@ abstract class CrawlerDexTracker
     protected function startClient($url): void
     {
         echo "Start crawling " . date("F j, Y,  H:i:s") . PHP_EOL;
-        $this->client = PantherClient::createChromeClient(null, $this->chromeArguments);
+        $this->client = PantherClient::createChromeClient();
         $this->client->start();
         $this->client->get($url);
     }
