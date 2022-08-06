@@ -5,7 +5,7 @@ namespace App\Domain\Query;
 use App\Common\ValueObjects\CryptocurrencyId;
 use InvalidArgumentException;
 
-class CryptocurrencyQuery
+class CryptocurrencyQueryById
 {
     private CryptocurrencyId $cryptocurrencyId;
 

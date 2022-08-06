@@ -11,18 +11,6 @@ class Currency
 
     public Price $price;
 
-    public const ALLOWED_PRICE_PER_TOKEN =
-        [
-            'wbnb' => 8.00,
-            'cake' => 760.00,
-            'bnb' => 8.00,
-            'usdc' => 2522.96,
-            'busd' => 2522.96,
-            'usdt' => 2522.96,
-            'fusdt' => 2522.96,
-            'usdp' => 2522.96
-        ];
-
     public function __construct(
         Chain $chain,
         Price $price

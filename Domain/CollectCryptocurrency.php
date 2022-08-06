@@ -16,19 +16,14 @@ use App\Domain\Entity\Information;
 use App\Domain\Entity\Names;
 use App\Domain\Entity\ScriptsJs;
 use App\Domain\Entity\Urls;
-use App\Domain\Model\Cryptocurrency;
 use App\Domain\Query\CryptocurrencyQueryByName;
 use App\Domain\QueryHandler\CryptocurrencyQueryHandlerByName;
-use App\Factory;
 use ArrayIterator;
 use Exception;
-use Facebook\WebDriver\Exception\NoSuchElementException;
-use Facebook\WebDriver\Exception\UnexpectedTagNameException;
 use Facebook\WebDriver\Remote\RemoteWebElement;
 use Facebook\WebDriver\WebDriverBy;
 use InvalidArgumentException;
-use Symfony\Component\Panther\Client;
-use Symfony\Component\Panther\WebDriver\PantherWebDriverExpectedCondition;
+
 use Symfony\Component\Panther\DomCrawler\Crawler as RemoteCrawler;
 
 class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
@@ -38,7 +33,6 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
         try {
             echo "Start crawling " . date("F j, Y, g:i:s a") . PHP_EOL;
             $this->startClient(Urls::URL);
-            //$this->changeOnWebsiteToShowMoreRecords();
             usleep(3000);
             $this->scrappingData();
         } catch (Exception $exception) {
@@ -58,6 +52,7 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
                 $this->client->reload();
             }
             if ($lastUri == 'https://bscscan.com/busy') {
+                sleep(12);
                 $this->client->restart();
             }
 
@@ -65,57 +60,64 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
             if ($currentUri === $lastUri) {
                 continue;
             }
-            echo 'Start getting content for page ' . $i . ' ' . date("F j, Y, g:i:s a") . PHP_EOL;
+
             try {
+                echo 'Start getting content for page ' . $i . ' ' . date("F j, Y, g:i:s a") . PHP_EOL;
                 $data = $this->getElementsFromWebsite($currentUri);
-                $this->createCryptocurrencyFrom($data);
+                if ($data !== null) {
+                    $this->createCryptocurrencyFrom($data);
+                }
                 $lastUri = $this->client->getCrawler()->getUri();
                 echo $lastUri . PHP_EOL;
                 echo 'Finish getting content for page ' . $i . ' ' . date("F j, Y, g:i:s a") . PHP_EOL;
-            } catch (Exception) {
-                $this->client->reload();
+            } catch (Exception $exception) {
+                echo $exception->getMessage();
                 continue;
             }
         }
     }
-
 
     private function getElementsFromWebsite($url): ?ArrayIterator
     {
         $this->client->get($url);
         $this->client->refreshCrawler();
         usleep(1000);
+        $elements = null;
         try {
             $elements = $this->client->getCrawler()
-                ->filterXPath(ScriptsJs::CONTENT_SELECTOR_TABLE_BODY_XPATH_FILTERED)
-                ->reduce(function (RemoteCrawler $node) {
+                ->filterXPath(ScriptsJs::CONTENT_SELECTOR_TABLE_BODY_XPATH_FILTERED_TD6)
+                ->ancestors()
+                ->reduce(
+                    function (RemoteCrawler $node) {
+                        $information = explode(" ", $node->text());
+                        $chain = $information[1];
+                        $price = round((float)$information[0], 4);
 
-                    $information = explode(" ", $node->text());
-                    $chain = $information[1];
-                    $price = round((float)$information[0], 4);
-                    switch ($chain) {
-                        case'WBNB':
-                            if ($price > 0.01) {
-                                return $node->ancestors();
-                            }
-                            return false;
-                        case 'BUSD':
-                        case'USDC':
-                        case 'BSC-USD':
-                        case 'USDT':
-                            if ($price > 2522.96) {
-                                return $node->ancestors();
-                            }
-                            return false;
-                        default:
-                            return false;
+                        switch ($chain) {
+                            case'WBNB':
+                                if ($price > 7.0) {
+                                    return $node;
+                                }
+                                return false;
+                            case 'BUSD':
+                            case'USDC':
+                            case 'BSC-USD':
+                            case 'USDT':
+                                if ($price > 2522.96) {
+                                    return $node;
+                                }
+                                return false;
+                            default:
+                        }
+                        return false;
                     }
-
-                })
+                )
+                ->ancestors()
                 ->getIterator();
         } catch (Exception $exception) {
             echo $exception->getMessage();
         }
+
         return $elements;
     }
 
@@ -124,17 +126,17 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
     ): void
     {
         foreach ($webElements as $webElement) {
-
             try {
                 assert($webElement instanceof RemoteWebElement);
-
                 $information = $this->getInformationFrom($webElement);
+
                 $service = Information::fromString($information);
                 $chain = $service->getChain();
                 $price = $service->getPrice();
                 echo 'Start getting name ' . date("F j, Y, g:i:s a") . PHP_EOL;
                 $name = $this->getNameFrom($webElement);
                 $name = Name::fromString($name);
+
                 $this->ensureTokenNameIsNotBlacklisted($name);
                 echo 'Finish getting name ' . date("F j, Y, g:i:s a") . PHP_EOL;
 
@@ -143,7 +145,6 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
                 echo 'Finish getting existing token ' . date("F j, Y, g:i:s a") . PHP_EOL;
 
                 echo 'Start getting existing address ' . date("F j, Y, g:i:s a") . PHP_EOL;
-
                 if ($cryptocurrencyExist) {
                     continue;
                 }
@@ -152,10 +153,7 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
                 echo 'Finish getting existing address ' . date("F j, Y, g:i:s a") . PHP_EOL;
                 echo 'Start emiting event ' . date("F j, Y, g:i:s a") . PHP_EOL;
                 $this->emmitCryptocurrencyRegisterEvent($address, $name, $price, $chain);
-
-
             } catch (InvalidArgumentException $exception) {
-                echo $exception->getMessage();
                 continue;
             }
         }
@@ -227,6 +225,3 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
             ->getAttribute('href');
     }
 }
-
-
-#content > div.container.space-bottom-2 > div > div.card-body > div.table-responsive.mb-2.mb-md-0 > table > tbody > tr:nth-child(8) > td:nth-child(5) > a

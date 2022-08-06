@@ -9,7 +9,7 @@ use App\Domain\Model\Cryptocurrency;
 
 interface CryptocurrencyRepository
 {
-    public function byId(CryptocurrencyId $id): Cryptocurrency;
+    public function byId(CryptocurrencyId $id): bool;
 
     public function byName(Name $name): bool;
 

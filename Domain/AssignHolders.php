@@ -15,7 +15,6 @@ use App\Domain\Query\AllCryptocurrenciesNotCompleteQuery;
 use App\Domain\QueryHandler\AllCryptocurrenciesNotCompleteQueryHandler;
 use InvalidArgumentException;
 use Symfony\Component\Panther\Client as PantherClient;
-use Symfony\Component\Process\Exception\RuntimeException;
 
 class AssignHolders extends CrawlerDexTracker implements Crawler
 {

@@ -102,8 +102,7 @@ class CollectCryptocurrencyBack extends CrawlerDexTracker implements Crawler
 
     private function createCryptocurrencyFrom(
         ?ArrayIterator $webElements
-    ): void
-    {
+    ): void {
         foreach ($webElements as $webElement) {
             try {
                 assert($webElement instanceof RemoteWebElement);
@@ -159,8 +158,7 @@ class CollectCryptocurrencyBack extends CrawlerDexTracker implements Crawler
 
     private function ensureTokenNameIsNotBlacklisted(
         string $name
-    ): void
-    {
+    ): void {
         if (in_array($name, NAMES::BLACKLISTED_NAMES_FOR_CRYPTOCURRENCIES)) {
             throw new InvalidArgumentException('Currency is on the blacklist');
         }
