@@ -7,16 +7,7 @@ use App\Common\ValueObjects\Price;
 
 class ChangePriceCommand
 {
-    public CryptocurrencyId $id;
-    public Price $price;
-
-    /**
-     * @param CryptocurrencyId $id
-     * @param Price $price
-     */
-    public function __construct(CryptocurrencyId $id, Price $price)
+    public function __construct(public CryptocurrencyId $id, public Price $price)
     {
-        $this->id = $id;
-        $this->price = $price;
     }
 }

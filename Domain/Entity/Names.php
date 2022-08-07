@@ -25,7 +25,8 @@ class Names
         'sturdy', 'megg', 'kirby', 'hle', 'amf', 'xki', 'rba', 'tsc', 'rfg', 'fsc', 'dfi', 'bmt', 'fbbc', 'encwta', 'velox', 'snap', 'bund',
         '$oil', 'gear', 'fusd', 'ubisoft', '$alti', 'nf', 'hub', 'sanshu', 'pxp', 'hotd', 'kgc', 'ila', 'chadcash', 'rev', 'drunk',
         'apple', 'shintama', 'arc', 'hbc', 'riox', 'fame', 'mmr', 'fs', 'tr', 'mgk', 'fc', 'rw', 'lgbtq', 'dmt', 'zero', 'ii', 'returndao',
-        'saudidoge', 'exm', 'arg', 'gpad', 'nptp', 'lc', 'daisy', 'unim', 'bsquidgrow', 'secret', 'baycdao', 'lup', 'cig', 'goat', 'ante', 'sqt', 'dclub', 'dnl', 'ds', 'penispump', 'lyka',
+        'saudidoge', 'exm', 'arg', 'gpad', 'nptp', 'lc', 'daisy', 'unim', 'bsquidgrow', 'secret', 'baycdao', 'lup', 'cig', 'goat', 'ante',
+        'sqt', 'dclub', 'dnl', 'ds', 'penispump', 'lyka',
 
     ];
 

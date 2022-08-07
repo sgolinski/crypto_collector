@@ -9,7 +9,7 @@ services:
       dockerfile: docker/Dockerfile
       context: ./..
     volumes:
-      - ../:/var/www/html
+      - ../:/mnt/app
     restart: always
     networks:
       - crawler

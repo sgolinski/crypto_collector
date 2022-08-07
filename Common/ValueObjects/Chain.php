@@ -13,9 +13,9 @@ class Chain
     }
 
     public static function fromString(
-        string $chain
+        string$chain
     ): self {
-        return new self($chain);
+        return new self(strtolower($chain));
     }
 
     public function __toString(): string

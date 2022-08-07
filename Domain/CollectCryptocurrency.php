@@ -26,7 +26,6 @@ use Facebook\WebDriver\Remote\RemoteWebElement;
 use Facebook\WebDriver\WebDriverBy;
 use InvalidArgumentException;
 
-use Symfony\Component\Panther\DomCrawler\Crawler as RemoteCrawler;
 
 class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
 {
@@ -40,7 +39,6 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
             echo $exception->getMessage() . PHP_EOL;
             $this->client->close();
             $this->client->quit();
-            $this->invoke();
         }
     }
 
