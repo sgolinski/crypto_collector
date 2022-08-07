@@ -6,7 +6,8 @@ use App\Common\ValueObjects\Address;
 use App\Common\ValueObjects\CryptocurrencyId;
 use App\Common\ValueObjects\Holders;
 use App\Common\ValueObjects\Name;
-use App\Domain\Model\Cryptocurrency;
+use App\Domain\Entity\Cryptocurrency;
+
 
 interface CryptocurrencyRepository
 {

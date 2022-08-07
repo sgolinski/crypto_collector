@@ -9,7 +9,8 @@ use App\Common\ValueObjects\Holders;
 use App\Common\ValueObjects\Name;
 use App\Common\ValueObjects\Percentage;
 use App\Common\ValueObjects\Price;
-use App\Domain\Model\Cryptocurrency;
+use App\Domain\Entity\Cryptocurrency;
+use App\Domain\Entity\Token;
 use App\Infrastructure\Exception\UnableToCreateCryptocurrencyException;
 use DateTimeImmutable;
 use Exception;
@@ -76,7 +77,7 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
         $stm->execute();
     }
 
-    public function byComplete($name): mixed
+    public function byComplete(Name $name): mixed
     {
         $sql = 'SELECT isComplete, isBlacklisted FROM single_cryptocurrency WHERE name = ?';
         $stm = $this->db->prepare($sql);
@@ -215,7 +216,7 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
             $isBlacklisted = (bool)$result['isBlacklisted'];
         }
 
-        $cryptocurrency = Cryptocurrency::create($cryptocurrency_id);
+        $cryptocurrency = Token::create($cryptocurrency_id);
         $cryptocurrency->fromParams(
             $address,
             $name,

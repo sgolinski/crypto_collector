@@ -6,7 +6,7 @@ use App\Application\Service\CrawlerDexTracker;
 use App\Application\Service\NotificationService;
 use App\Domain\Command\SendAlertCommand;
 use App\Domain\CommandHandler\SendAlertCommandHandler;
-use App\Domain\Model\Cryptocurrency;
+use App\Domain\Entity\Token;
 use App\Domain\Query\AllCryptocurrenciesCompleteQuery;
 use App\Domain\QueryHandler\AllCryptocurrenciesCompleteQueryHandler;
 use App\Infrastructure\Repository\PDOCryptocurrencyRepository;
@@ -40,7 +40,7 @@ class SendAlerts extends CrawlerDexTracker implements Crawler
         }
     }
 
-    private function createAlertMessage(Cryptocurrency $completeToken)
+    private function createAlertMessage(Token $completeToken)
     {
         return 'Name: ' . $completeToken->name() . PHP_EOL .
             'Drop price: ' . $completeToken->price() . ' ' . $completeToken->chain() . PHP_EOL .

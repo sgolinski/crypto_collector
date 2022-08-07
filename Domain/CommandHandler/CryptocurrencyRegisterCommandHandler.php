@@ -3,7 +3,7 @@
 namespace App\Domain\CommandHandler;
 
 use App\Domain\Command\CryptocurrencyRegisterCommand;
-use App\Domain\Model\Cryptocurrency;
+use App\Domain\Entity\Token;
 use App\Infrastructure\Repository\CryptocurrencyRepository;
 
 class CryptocurrencyRegisterCommandHandler
@@ -17,7 +17,7 @@ class CryptocurrencyRegisterCommandHandler
 
     public function handle(CryptocurrencyRegisterCommand $command): void
     {
-        $cryptocurrency = Cryptocurrency::writeNewFrom(
+        $cryptocurrency = Token::writeNewFrom(
             $command->address,
             $command->name,
             $command->price,

@@ -9,17 +9,24 @@ use App\Common\ValueObjects\CryptocurrencyId;
 use App\Common\ValueObjects\Name;
 use App\Common\ValueObjects\Price;
 use App\Domain\Command\ChangePriceCommand;
+use App\Domain\Command\CreatePotentialDropCryptoCurrencyCommand;
 use App\Domain\Command\CryptocurrencyRegisterCommand;
 use App\Domain\CommandHandler\ChangePriceCommandHandler;
+use App\Domain\CommandHandler\CreatePotentialDropCryptoCurrencyCommandHandler;
 use App\Domain\CommandHandler\CryptocurrencyRegisterCommandHandler;
+use App\Domain\Entity\Cryptocurrency;
+use App\Domain\Entity\Currency;
 use App\Domain\Entity\Information;
 use App\Domain\Entity\Names;
+use App\Domain\Entity\PotentialDropToken;
 use App\Domain\Entity\ScriptsJs;
 use App\Domain\Entity\Urls;
 use App\Domain\Query\CryptocurrencyQueryByAddress;
 use App\Domain\Query\CryptocurrencyQueryByName;
 use App\Domain\QueryHandler\CryptocurrencyQueryHandlerByAddress;
 use App\Domain\QueryHandler\CryptocurrencyQueryHandlerByName;
+use App\Infrastructure\Repository\CryptocurrencyRepository;
+use App\Infrastructure\Repository\PDOCryptocurrencyRepository;
 use ArrayIterator;
 use Exception;
 use Facebook\WebDriver\Remote\RemoteWebElement;
@@ -27,8 +34,20 @@ use Facebook\WebDriver\WebDriverBy;
 use InvalidArgumentException;
 
 
+/**
+ * @property array $potentialDropObjects
+ */
 class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
 {
+    private static CryptocurrencyRepository $cryptocurrencyRepository;
+
+    private array $potentialDrop = [];
+
+    public function __construct(PDOCryptocurrencyRepository $cryptocurrencyRepository)
+    {
+        self::$cryptocurrencyRepository = $cryptocurrencyRepository;
+    }
+
     public function invoke(): void
     {
         try {
@@ -107,7 +126,27 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
                 $price = $service->getPrice();
                 $name = $this->getNameFrom($webElement);
                 $name = Name::fromString($name);
+                $priceCheck = $this->ensurePriceIsHighEnough($chain, $price);
+
+                if (!in_array($name->__toString(), $this->potentialDrop)) {
+                    $address = $this->getAddressFrom($webElement);
+                    $address = Address::fromString($address);
+                    $this->potentialDrop [$name->__toString()] = PotentialDropToken::writeNewFrom($address, $name, $price, $chain);
+                    continue;
+                }
+
+                if (in_array($name->__toString(), $this->potentialDrop[$name->__toString()])) {
+                    if (!in_array($price->asFloat(), $this->potentialDrop[$name->__toString()]->getPrices())) {
+                        $this->potentialDrop[$name->__toString()]->noticeRepeat()->addPrices($price->asFloat());
+                    }
+                    continue;
+                }
+
+                if (!$priceCheck) {
+                    continue;
+                }
                 $this->ensureTokenNameIsNotBlacklisted($name);
+
                 $cryptocurrencyExist = $this->findCryptocurrencyByName($name);
 
                 if ($cryptocurrencyExist) {
@@ -130,14 +169,14 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
     private function findCryptocurrencyByName(Name $name): bool
     {
         $cryptocurrencyQuery = new CryptocurrencyQueryByName($name);
-        $cryptocurrencyQueryByNameHandler = new CryptocurrencyQueryHandlerByName($this->cryptocurrencyRepository);
+        $cryptocurrencyQueryByNameHandler = new CryptocurrencyQueryHandlerByName(self::$cryptocurrencyRepository);
         return $cryptocurrencyQueryByNameHandler->__invoke($cryptocurrencyQuery);
     }
 
     private function findCryptocurrencyByAddress(Address $address): bool
     {
         $cryptocurrencyQuery = new CryptocurrencyQueryByAddress($address);
-        $cryptocurrencyQueryByAddressHandler = new CryptocurrencyQueryHandlerByAddress($this->cryptocurrencyRepository);
+        $cryptocurrencyQueryByAddressHandler = new CryptocurrencyQueryHandlerByAddress(self::$cryptocurrencyRepository);
         return $cryptocurrencyQueryByAddressHandler->__invoke($cryptocurrencyQuery);
     }
 
@@ -145,7 +184,7 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
     {
         echo 'Start emitting event ' . date("F j, Y, g:i:s a") . PHP_EOL;
         $registerCryptocurrencyCommand = new CryptocurrencyRegisterCommand($address, $name, $price, $chain);
-        $registerCryptocurrencyCommandHandler = new CryptocurrencyRegisterCommandHandler($this->cryptocurrencyRepository);
+        $registerCryptocurrencyCommandHandler = new CryptocurrencyRegisterCommandHandler(self::$cryptocurrencyRepository);
         $registerCryptocurrencyCommandHandler->handle($registerCryptocurrencyCommand);
 
     }
@@ -153,10 +192,17 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
     private function emmitCryptocurrencyPriceWasChangedEvent(CryptocurrencyId $id, Price $price): void
     {
         $changePriceCommand = new ChangePriceCommand($id, $price);
-        $changePriceCommandHandler = new ChangePriceCommandHandler($this->cryptocurrencyRepository);
+        $changePriceCommandHandler = new ChangePriceCommandHandler(self::$cryptocurrencyRepository);
         $changePriceCommandHandler->handle($changePriceCommand);
     }
 
+
+    public static function EmmitPotentialDropEvent(Cryptocurrency $token)
+    {
+        $createPotentialDropCryptocurrencyCommand = new CreatePotentialDropCryptoCurrencyCommand($token);
+        $createPotentialDropCryptocurrencyCommandHandler = new CreatePotentialDropCryptoCurrencyCommandHandler(self::$cryptocurrencyRepository);
+        $createPotentialDropCryptocurrencyCommandHandler->handle($createPotentialDropCryptocurrencyCommand);
+    }
 
     private function ensureTokenNameIsNotBlacklisted(
         string $name
@@ -207,4 +253,16 @@ class CollectCryptocurrency extends CrawlerDexTracker implements Crawler
             throw new InvalidArgumentException('Address already in DB ');
         }
     }
+
+    private function ensurePriceIsHighEnough(
+        Chain $chain,
+        Price $price
+    ): bool
+    {
+        if ($price->asFloat() < Currency::ALLOWED_PRICE_PER_TOKEN[$chain->__toString()]) {
+            return false;
+        }
+        return true;
+    }
+
 }

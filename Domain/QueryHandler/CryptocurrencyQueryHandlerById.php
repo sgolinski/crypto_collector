@@ -2,7 +2,6 @@
 
 namespace App\Domain\QueryHandler;
 
-use App\Domain\Model\Cryptocurrency;
 use App\Domain\Query\CryptocurrencyQueryById;
 use App\Infrastructure\Repository\CryptocurrencyRepository;
 

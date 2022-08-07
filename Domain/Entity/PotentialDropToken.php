@@ -1,34 +1,25 @@
 <?php
 
-namespace App\Domain\Model;
+namespace App\Domain\Entity;
 
 use App\Common\Event\EventSourcedAggregateRoot;
 use App\Common\Event\Sourcing\EventStream;
 use App\Common\ValueObjects\Address;
 use App\Common\ValueObjects\Chain;
 use App\Common\ValueObjects\CryptocurrencyId;
-use App\Common\ValueObjects\Holders;
 use App\Common\ValueObjects\Name;
-use App\Common\ValueObjects\Percentage;
 use App\Common\ValueObjects\Price;
+use App\Domain\CollectCryptocurrency;
 use App\Domain\Event\CryptocurrencyPercentageWasChanged;
 use App\Domain\Event\CryptocurrencyPriceWasChanged;
 use App\Domain\Event\CryptocurrencyWasRegistered;
-use DateTimeImmutable;
 
-class Cryptocurrency extends EventSourcedAggregateRoot
+class PotentialDropToken extends EventSourcedAggregateRoot implements Cryptocurrency
 {
-    private CryptocurrencyId $id;
-    private Address $address;
     private Name $name;
-    private Price $price;
-    private Chain $chain;
-    private ?Holders $holders;
-    private ?Percentage $percentage;
-    private $published = false;
-    private DateTimeImmutable $created;
-    private bool $isComplete;
-    private bool $isBlacklisted;
+    private Address $address;
+    private int $repeats = 0;
+    private array $prices = [];
 
     private function __construct(CryptocurrencyId $cryptocurrencyId)
     {
@@ -40,9 +31,11 @@ class Cryptocurrency extends EventSourcedAggregateRoot
         $name,
         $price,
         $chain,
-    ): self {
+    ): self
+    {
         $cryptocurrencyId = CryptocurrencyId::create();
         $cryptocurrency = new static($cryptocurrencyId);
+        $cryptocurrency->prices[] = $price->asFloat();
 
         $cryptocurrency->recordApplyAndPublishThat(
             new CryptocurrencyWasRegistered(
@@ -57,39 +50,29 @@ class Cryptocurrency extends EventSourcedAggregateRoot
         return $cryptocurrency;
     }
 
-    public function fromParams(
-        Address           $address,
-        Name              $name,
-        Chain             $chain,
-        Price             $price,
-        DateTimeImmutable $created,
-        bool              $isComplete,
-        bool              $isBlacklisted,
-        Holders           $holders = null,
-    ): self {
-        $this->address = $address;
-        $this->name = $name;
-        $this->chain = $chain;
-        $this->price = $price;
-        $this->created = $created;
-        $this->isComplete = $isComplete;
-        $this->isBlacklisted = $isBlacklisted;
-        $this->holders = $holders;
+    public function name(): Name
+    {
+        return $this->name;
+    }
 
+    public function address(): Address
+    {
+        return $this->address;
+    }
+
+    public function noticeRepeat(): self
+    {
+        if ($this->repeats > 10) {
+            $this->repeats = 0;
+            CollectCryptocurrency::EmmitPotentialDropEvent($this);
+        }
+        $this->repeats++;
         return $this;
     }
 
-    public static function create(
-        $cryptocurrencyId
-    ): self {
-        return new static($cryptocurrencyId);
-    }
-
-    public function changePriceFor($price): void
+    public function getRepeats(): int
     {
-        $this->recordApplyAndPublishThat(
-            new CryptocurrencyPriceWasChanged($this->id, $price)
-        );
+        return $this->repeats;
     }
 
     public function id(): CryptocurrencyId
@@ -99,7 +82,8 @@ class Cryptocurrency extends EventSourcedAggregateRoot
 
     protected function applyCryptocurrencyWasRegistered(
         CryptocurrencyWasRegistered $event
-    ): void {
+    ): void
+    {
         $this->address = $event->address();
         $this->name = $event->name();
         $this->price = $event->price();
@@ -109,34 +93,28 @@ class Cryptocurrency extends EventSourcedAggregateRoot
 
     protected function applyCryptocurrencyPercentageWasChanged(
         CryptocurrencyPercentageWasChanged $event
-    ): void {
+    ): void
+    {
         $this->percentage = $event->percentage();
     }
 
     protected function applyCryptocurrencyPriceWasChanged(
         CryptocurrencyPriceWasChanged $event
-    ): void {
+    ): void
+    {
         $this->price = $event->price();
     }
 
     public static function reconstitute(
         EventStream $history
-    ): EventSourcedAggregateRoot {
+    ): EventSourcedAggregateRoot
+    {
         $cryptocurrency = new static(new CryptocurrencyId($history->getAggregateId()));
         $cryptocurrency->replay($history);
 
         return $cryptocurrency;
     }
 
-    public function address(): Address
-    {
-        return $this->address;
-    }
-
-    public function name(): Name
-    {
-        return $this->name;
-    }
 
     public function price(): Price
     {
@@ -147,4 +125,10 @@ class Cryptocurrency extends EventSourcedAggregateRoot
     {
         return $this->chain;
     }
+
+    private function addPrices(Price $price): void
+    {
+        $this->prices[] = $price->asFloat();
+    }
+
 }

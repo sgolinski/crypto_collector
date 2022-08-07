@@ -9,7 +9,7 @@ use App\Common\ValueObjects\Holders;
 use App\Common\ValueObjects\Name;
 use App\Common\ValueObjects\Percentage;
 use App\Common\ValueObjects\Price;
-use App\Domain\Model\Cryptocurrency;
+use App\Domain\Entity\Token;
 use App\Infrastructure\Exception\UnableToCreateCryptocurrencyException;
 use DateTimeImmutable;
 use Exception;
@@ -30,7 +30,7 @@ class RedisCryptocurrencyRepository implements CryptocurrencyRepository
         }
     }
 
-    public function add(Cryptocurrency $cryptocurrency): void
+    public function add(Token $cryptocurrency): void
     {
         $this->db->beginTransaction();
 
@@ -54,7 +54,7 @@ class RedisCryptocurrencyRepository implements CryptocurrencyRepository
         }
     }
 
-    public function byId(CryptocurrencyId $id): Cryptocurrency
+    public function byId(CryptocurrencyId $id): Token
     {
         $stm = $this->db->prepare(
             'SELECT * FROM single_cryptocurrency WHERE id = ?'
@@ -84,7 +84,7 @@ class RedisCryptocurrencyRepository implements CryptocurrencyRepository
         return $stm->fetch();
     }
 
-    public function byName(Name $name): ?Cryptocurrency
+    public function byName(Name $name): ?Token
     {
         $stm = $this->db->prepare(
             'SELECT * FROM single_cryptocurrency WHERE name = ? AND isComplete = 1 AND isBlacklisted = 0'
@@ -98,7 +98,7 @@ class RedisCryptocurrencyRepository implements CryptocurrencyRepository
     /**
      * @throws Exception
      */
-    private function format(mixed $result): ?Cryptocurrency
+    private function format(mixed $result): ?Token
     {
         if (empty($result)) {
             return null;
@@ -145,7 +145,7 @@ class RedisCryptocurrencyRepository implements CryptocurrencyRepository
         }
 
 
-        $cryptocurrency = Cryptocurrency::create($cryptocurrency_id);
+        $cryptocurrency = Token::create($cryptocurrency_id);
         $cryptocurrency->fromParams(
             $address,
             $name,

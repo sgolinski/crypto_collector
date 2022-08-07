@@ -14,7 +14,8 @@ class Information
 
     private function __construct(
         string $information
-    ) {
+    )
+    {
         $this->ensureInformationIsNotNull($information);
         $this->ensureInformationAfterExplodeHasTwoEntry($information);
         $this->information = explode(" ", $information);
@@ -23,17 +24,19 @@ class Information
         $this->ensureInformationAboutTokenIsNotNull($this->information[1]);
         $this->chain = $this->extractChainFrom($this->information[1]);
         $this->ensureIsAllowedChain($this->chain);
-        $this->ensurePriceIsHighEnough($this->chain, $this->price);    }
+    }
 
     public static function fromString(
         string $information
-    ): self {
+    ): self
+    {
         return new self($information);
     }
 
     private function ensureInformationIsNotNull(
         string $information
-    ): void {
+    ): void
+    {
         if ($information === null) {
             throw new InvalidArgumentException('Information is empty!');
         }
@@ -58,7 +61,8 @@ class Information
 
     private function extractPriceFrom(
         string $float
-    ): Price {
+    ): Price
+    {
         $strPrice = str_replace([','], [''], $float);
 
         return Price::fromFloat(round((float)$strPrice, 3));
@@ -66,7 +70,8 @@ class Information
 
     private function extractChainFrom(
         string $data
-    ): Chain {
+    ): Chain
+    {
         return Chain::fromString(strtolower($data));
     }
 
@@ -91,13 +96,5 @@ class Information
         }
     }
 
-    private function ensurePriceIsHighEnough(
-        Chain $chain,
-        Price $price
-    ): void
-    {
-        if ($price->asFloat() < Currency::ALLOWED_PRICE_PER_TOKEN[$chain->__toString()]) {
-            throw new InvalidArgumentException('Price is not high enough');
-        }
-    }
+
 }
