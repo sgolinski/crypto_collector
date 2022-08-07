@@ -6,8 +6,10 @@ use App\Common\ValueObjects\CryptocurrencyId;
 
 class AssignToBlackListCommand
 {
+    public CryptocurrencyId $id;
 
-    public function __construct(public CryptocurrencyId $id)
+    public function __construct( CryptocurrencyId $id)
     {
+        $this->id = $id;
     }
 }

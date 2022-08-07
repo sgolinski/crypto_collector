@@ -6,7 +6,10 @@ use App\Common\ValueObjects\CryptocurrencyId;
 
 class SendAlertCommand
 {
-    public function __construct(public CryptocurrencyId $id)
+    public CryptocurrencyId $id;
+
+    public function __construct(CryptocurrencyId $id)
     {
+        $this->id = $id;
     }
 }

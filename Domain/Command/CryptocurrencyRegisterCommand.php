@@ -14,12 +14,25 @@ use DateTimeImmutable;
 class CryptocurrencyRegisterCommand
 {
     public CryptocurrencyId $id;
+    public Address $address;
+    public Name $name;
+    public Price $price;
+    public Chain $chain;
     public ?Holders $holders;
     public ?Percentage $percentage;
     public DateTimeImmutable $occured_on;
 
-
-    public function __construct(public Address $address, Name $name, Price $price, Chain $chain)
+    /**
+     * @param Address $address
+     * @param Name $name
+     * @param Price $price
+     * @param Chain $chain
+     */
+    public function __construct(Address $address, Name $name, Price $price, Chain $chain)
     {
+        $this->address = $address;
+        $this->name = $name;
+        $this->price = $price;
+        $this->chain = $chain;
     }
 }
