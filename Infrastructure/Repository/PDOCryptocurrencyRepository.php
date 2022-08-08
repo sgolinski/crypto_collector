@@ -4,14 +4,14 @@ namespace App\Infrastructure\Repository;
 
 use App\Common\ValueObjects\Address;
 use App\Common\ValueObjects\Chain;
-use App\Common\ValueObjects\CryptocurrencyId;
 use App\Common\ValueObjects\Holders;
 use App\Common\ValueObjects\Name;
 use App\Common\ValueObjects\Percentage;
 use App\Common\ValueObjects\Price;
-use App\Domain\Entity\Cryptocurrency;
+use App\Common\ValueObjects\TransactionId;
+use App\Domain\Entity\Transaction;
 use App\Domain\Entity\Token;
-use App\Infrastructure\Exception\UnableToCreateCryptocurrencyException;
+use App\Infrastructure\Exception\UnableToCreateCryptocurrencyTransactionException;
 use DateTimeImmutable;
 use Exception;
 use PDO;
@@ -35,8 +35,9 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
         }
     }
 
-    public function add(Cryptocurrency $cryptocurrency): void
+    public function add(Transaction $transaction): void
     {
+        echo 'query';
         $this->db->beginTransaction();
 
         $sql = 'INSERT INTO single_cryptocurrency (cryptocurrency_id,address, name,price,chain,holders,percentage,occured_on) VALUES (?,?, ?,?,?,null,null,NOW())';
@@ -46,20 +47,20 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
             );
 
             $stm->execute([
-                $cryptocurrency->id(),
-                $cryptocurrency->address(),
-                $cryptocurrency->name(),
-                $cryptocurrency->price(),
-                $cryptocurrency->chain(),
+                $transaction->id()->asString(),
+                $transaction->address()->asString(),
+                $transaction->name()->asString(),
+                $transaction->price()->asFloat(),
+                $transaction->chain()->asString(),
             ]);
             $this->db->commit();
         } catch (Exception $e) {
             $this->db->rollback();
-            throw new UnableToCreateCryptocurrencyException($e);
+            throw new UnableToCreateCryptocurrencyTransactionException($e);
         }
     }
 
-    public function byId(CryptocurrencyId $id): bool
+    public function byId(TransactionId $id): bool
     {
         $stm = $this->db->prepare(
             'SELECT name FROM single_cryptocurrency WHERE cryptocurrency_id = :id'
@@ -98,7 +99,7 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
         return $stm->rowCount();
     }
 
-    public function byAddress(Address $address): bool
+    public function byAddress(Address $address): Transaction
     {
         $stm = $this->db->prepare(
             'SELECT cryptocurrency_id FROM single_cryptocurrency WHERE address = :address'
@@ -107,17 +108,17 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
 
         $stm->execute();
 
-        return $stm->rowCount();
+        return $this->format($stm->fetch());
     }
 
-    public function addToBlackList(CryptocurrencyId $id): void
+    public function addToBlackList(TransactionId $id): void
     {
         $sql = 'UPDATE single_cryptocurrency SET isBlacklisted = true WHERE  cryptocurrency_id = ? AND isBlacklisted=false';
         $stm = $this->db->prepare($sql);
         $stm->execute([$id]);
     }
 
-    public function updateHolders(CryptocurrencyId $id, Holders $holders)
+    public function updateHolders(TransactionId $id, Holders $holders)
     {
         $sql = 'UPDATE single_cryptocurrency SET holders = :holders, occured_on = NOW(), isComplete = true WHERE  cryptocurrency_id = :id AND isComplete = false AND isBlacklisted=false ';
         $stm = $this->db->prepare($sql);
@@ -126,7 +127,7 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
         $stm->execute();
     }
 
-    public function updateAlert(CryptocurrencyId $id): void
+    public function updateAlert(TransactionId $id): void
     {
         $sql = 'UPDATE single_cryptocurrency SET isAlertSent =true , occured_on = NOW() WHERE  cryptocurrency_id = :id AND isComplete =true AND isBlacklisted=false ';
         $stm = $this->db->prepare($sql);
@@ -161,7 +162,7 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
         return $returnArr;
     }
 
-    private function format(mixed $result): ?Cryptocurrency
+    private function format(mixed $result): ?Transaction
     {
         if (empty($result)) {
             return null;
@@ -171,7 +172,7 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
         $cryptocurrency_id = null;
 
         if (isset($result['cryptocurrency_id'])) {
-            $cryptocurrency_id = CryptocurrencyId::fromString($result['cryptocurrency_id']);
+            $cryptocurrency_id = TransactionId::fromString($result['cryptocurrency_id']);
         }
 
         $address = null;

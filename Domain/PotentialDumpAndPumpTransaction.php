@@ -2,33 +2,23 @@
 
 namespace App\Domain\Entity;
 
+use App\Application\Service\CollectCryptocurrency;
 use App\Common\Event\EventSourcedAggregateRoot;
 use App\Common\Event\Sourcing\EventStream;
 use App\Common\ValueObjects\Address;
 use App\Common\ValueObjects\Chain;
 use App\Common\ValueObjects\CryptocurrencyId;
-use App\Common\ValueObjects\Holders;
 use App\Common\ValueObjects\Name;
-use App\Common\ValueObjects\Percentage;
 use App\Common\ValueObjects\Price;
-use App\Domain\Event\CryptocurrencyPercentageWasChanged;
 use App\Domain\Event\CryptocurrencyPriceWasChanged;
 use App\Domain\Event\CryptocurrencyTransactionWasRegistered;
-use DateTimeImmutable;
 
-class Token extends EventSourcedAggregateRoot implements Transaction
+class PotentialDumpAndPumpTransaction extends EventSourcedAggregateRoot implements Transaction
 {
-    private CryptocurrencyId $id;
-    private Address $address;
     private Name $name;
-    private Price $price;
-    private Chain $chain;
-    private ?Holders $holders;
-    private ?Percentage $percentage;
-    private $published = false;
-    private DateTimeImmutable $created;
-    private bool $isComplete;
-    private bool $isBlacklisted;
+    private Address $address;
+    private int $repeats = 0;
+    private array $prices = [];
 
     private function __construct(CryptocurrencyId $cryptocurrencyId)
     {
@@ -44,6 +34,7 @@ class Token extends EventSourcedAggregateRoot implements Transaction
     {
         $cryptocurrencyId = CryptocurrencyId::create();
         $cryptocurrency = new static($cryptocurrencyId);
+        $cryptocurrency->prices[] = $price->asFloat();
 
         $cryptocurrency->recordApplyAndPublishThat(
             new CryptocurrencyTransactionWasRegistered(
@@ -58,41 +49,29 @@ class Token extends EventSourcedAggregateRoot implements Transaction
         return $cryptocurrency;
     }
 
-    public function fromParams(
-        Address           $address,
-        Name              $name,
-        Chain             $chain,
-        Price             $price,
-        DateTimeImmutable $created,
-        bool              $isComplete,
-        bool              $isBlacklisted,
-        Holders           $holders = null,
-    ): self
+    public function name(): Name
     {
-        $this->address = $address;
-        $this->name = $name;
-        $this->chain = $chain;
-        $this->price = $price;
-        $this->created = $created;
-        $this->isComplete = $isComplete;
-        $this->isBlacklisted = $isBlacklisted;
-        $this->holders = $holders;
+        return $this->name;
+    }
 
+    public function address(): Address
+    {
+        return $this->address;
+    }
+
+    public function noticeRepeat(): self
+    {
+        if ($this->repeats > 10) {
+            $this->repeats = 0;
+            CollectCryptocurrency::EmmitPotentialDropEvent($this);
+        }
+        $this->repeats++;
         return $this;
     }
 
-    public static function create(
-        $cryptocurrencyId
-    ): self
+    public function getRepeats(): int
     {
-        return new static($cryptocurrencyId);
-    }
-
-    public function changePriceFor($price): void
-    {
-        $this->recordApplyAndPublishThat(
-            new CryptocurrencyPriceWasChanged($this->id, $price)
-        );
+        return $this->repeats;
     }
 
     public function id(): CryptocurrencyId
@@ -111,13 +90,6 @@ class Token extends EventSourcedAggregateRoot implements Transaction
     }
 
 
-    protected function applyCryptocurrencyPercentageWasChanged(
-        CryptocurrencyPercentageWasChanged $event
-    ): void
-    {
-        $this->percentage = $event->percentage();
-    }
-
     protected function applyCryptocurrencyPriceWasChanged(
         CryptocurrencyPriceWasChanged $event
     ): void
@@ -135,15 +107,6 @@ class Token extends EventSourcedAggregateRoot implements Transaction
         return $cryptocurrency;
     }
 
-    public function address(): Address
-    {
-        return $this->address;
-    }
-
-    public function name(): Name
-    {
-        return $this->name;
-    }
 
     public function price(): Price
     {
@@ -154,4 +117,10 @@ class Token extends EventSourcedAggregateRoot implements Transaction
     {
         return $this->chain;
     }
+
+    public function addPrices(Price $price): void
+    {
+        $this->prices[] = $price->asFloat();
+    }
+
 }

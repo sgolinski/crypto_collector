@@ -2,10 +2,10 @@
 
 namespace App\Domain\QueryHandler;
 
-use App\Domain\Query\FindAllNotCompleteCryptocurrencyTransactions;
+use App\Domain\Query\FindCryptocurrencyTransactionByName;
 use App\Infrastructure\Repository\CryptocurrencyRepository;
 
-class AllCryptocurrenciesNotCompleteQueryHandler
+class FindCryptocurrencyTransactionByNameHandler
 {
     private CryptocurrencyRepository $cryptocurrencyRepository;
 
@@ -14,8 +14,8 @@ class AllCryptocurrenciesNotCompleteQueryHandler
         $this->cryptocurrencyRepository = $cryptocurrencyRepository;
     }
 
-    public function __invoke(FindAllNotCompleteCryptocurrencyTransactions $cryptocurrencyQuery): array
+    public function __invoke(FindCryptocurrencyTransactionByName $cryptocurrencyQueryByName): bool
     {
-        return $this->cryptocurrencyRepository->findAllNotComplete();
+        return $this->cryptocurrencyRepository->byName($cryptocurrencyQueryByName->name());
     }
 }

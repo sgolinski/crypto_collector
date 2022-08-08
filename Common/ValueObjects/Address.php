@@ -8,17 +8,19 @@ class Address
 
     private function __construct(
         string $address
-    ) {
+    )
+    {
         $this->address = trim(str_replace('/address/', '', $address));
     }
 
     public static function fromString(
         string $address
-    ): self {
+    ): self
+    {
         return new self($address);
     }
 
-    public function __toString(): string
+    public function asString(): string
     {
         return $this->address;
     }

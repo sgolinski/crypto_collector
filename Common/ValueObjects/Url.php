@@ -18,7 +18,7 @@ class Url
         return new self($url);
     }
 
-    public function __toString(): string
+    public function asString(): string
     {
         return $this->url;
     }
