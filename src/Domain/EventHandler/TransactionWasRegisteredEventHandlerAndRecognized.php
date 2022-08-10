@@ -9,7 +9,7 @@ use App\Infrastructure\Repository\CryptocurrencyRepository;
 use App\Infrastructure\Repository\RemoteCryptocurrencyRepository;
 use InvalidArgumentException;
 
-class TransactionWasRegisteredEventHandler implements EventHandler
+class TransactionWasRegisteredEventHandlerAndRecognized implements EventHandler
 {
     private RemoteCryptocurrencyRepository $remoteRepository;
     private CryptocurrencyRepository $repository;

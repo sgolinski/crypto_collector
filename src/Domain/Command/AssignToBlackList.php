@@ -2,13 +2,13 @@
 
 namespace App\Domain\Command;
 
-use App\Common\ValueObjects\TransactionId;
+use App\Common\ValueObjects\Id;
 
 class AssignToBlackList
 {
-    public TransactionId $id;
+    public Id $id;
 
-    public function __construct(TransactionId $id)
+    public function __construct(Id $id)
     {
         $this->id = $id;
     }

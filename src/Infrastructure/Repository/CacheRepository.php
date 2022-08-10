@@ -2,8 +2,8 @@
 
 namespace App\Infrastructure\Repository;
 
-use App\Common\ValueObjects\Address;
 use App\Common\ValueObjects\Chain;
+use App\Common\ValueObjects\Id;
 use App\Common\ValueObjects\Name;
 use App\Common\ValueObjects\Price;
 use App\CryptocurrencyTransaction;
@@ -20,11 +20,10 @@ class CacheRepository
     public function findAllTransactions(ArrayIterator $webElements)
     {
         try {
-
             foreach ($webElements as $cache) {
                 $transaction = $this->findOneTransaction($cache);
                 if ($transaction !== null) {
-                    $this->webElementCache[$transaction->id()->asString()] = $transaction->recordedEvents();
+                    $this->webElementCache[$transaction->id()->asString()] = $transaction;
                 }
             }
             return $this->webElementCache;
@@ -33,12 +32,11 @@ class CacheRepository
         }
     }
 
-
     public function findOneTransaction(RemoteWebElement $webElement): ?CryptocurrencyTransaction
     {
         try {
             return CryptocurrencyTransaction::writeNewFrom(
-                $this->findAddress($webElement),
+                $this->findId($webElement),
                 $this->findName($webElement),
                 $this->findPrice($webElement),
                 $this->findChain($webElement)
@@ -61,24 +59,26 @@ class CacheRepository
             ->getText());
     }
 
-    private function findPrice(RemoteWebElement $webElement): Price
+    private function findId(RemoteWebElement $webElement): Id
     {
-        return $this->extractInformation($webElement)[0];
-    }
-
-    private function findChain(RemoteWebElement $webElement): Chain
-    {
-        return $this->extractInformation($webElement)[1];
-    }
-
-    private function findAddress(RemoteWebElement $webElement): Address
-    {
-        return Address::fromString($webElement
+        return Id::fromString($webElement
             ->findElement(WebDriverBy::cssSelector(ScriptsJs::ADDRESS_SELECTOR))
             ->getAttribute('href'));
     }
 
-    private function extractInformation(RemoteWebElement $webElement): array
+    private function findPrice(RemoteWebElement $webElement): Price
+    {
+        $information = $webElement
+            ->findElement(WebDriverBy::cssSelector(ScriptsJs::INFORMATION_SELECTOR))
+            ->getText();
+
+
+        $information = explode(" ", $information);
+
+        return $this->extractPriceFrom($information[0]);
+    }
+
+    private function findChain(RemoteWebElement $webElement): Chain
     {
         $information = $webElement
             ->findElement(WebDriverBy::cssSelector(ScriptsJs::INFORMATION_SELECTOR))
@@ -86,7 +86,7 @@ class CacheRepository
 
         $information = explode(" ", $information);
 
-        return [$this->extractPriceFrom($information[0]), $this->extractChainFrom($information[0])];
+        return $this->extractChainFrom($information[1]);
     }
 
     private function extractPriceFrom(

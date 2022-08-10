@@ -2,8 +2,6 @@
 
 namespace App\Common\ValueObjects;
 
-use App\Domain\Entity\Names;
-use InvalidArgumentException;
 
 class Chain
 {

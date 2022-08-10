@@ -3,24 +3,24 @@
 namespace App\Domain\Event;
 
 use App\Common\Event\DomainEvent;
-use App\Common\ValueObjects\TransactionId;
+use App\Common\ValueObjects\Id;
 use App\Common\ValueObjects\Holders;
 use DateTimeImmutable;
 
 class HoldersWereAssigned implements DomainEvent
 {
-    private TransactionId $id;
+    private Id $id;
     private Holders $holders;
     private DateTimeImmutable $occurredOn;
 
-    public function __construct(TransactionId $id, Holders $holders)
+    public function __construct(Id $id, Holders $holders)
     {
         $this->id = $id;
         $this->holders = $holders;
         $this->occurredOn = new DateTimeImmutable();
     }
 
-    public function id(): TransactionId
+    public function id(): Id
     {
         return $this->id;
     }

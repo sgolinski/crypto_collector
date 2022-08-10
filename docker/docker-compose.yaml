@@ -7,7 +7,7 @@ services:
   php-cli:
     build:
       dockerfile: Dockerfile
-      context: ../..
+      context: ..
     volumes:
       - ../:/mnt/app
     restart: always

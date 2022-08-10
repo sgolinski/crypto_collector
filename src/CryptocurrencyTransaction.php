@@ -4,22 +4,23 @@ namespace App;
 
 use App\Common\Event\EventSourcedAggregateRoot;
 use App\Common\Event\Sourcing\EventStream;
-use App\Common\ValueObjects\Address;
 use App\Common\ValueObjects\Chain;
 use App\Common\ValueObjects\Holders;
 use App\Common\ValueObjects\Name;
 use App\Common\ValueObjects\Price;
-use App\Common\ValueObjects\TransactionId;
+use App\Common\ValueObjects\Id;
 use App\Common\ValueObjects\Url;
+use App\Domain\Command\RegisterTransaction;
+use App\Domain\CommandHandler\RegisterTransactionHandler;
 use App\Domain\Event\HoldersWereAssigned;
 use App\Domain\Event\PotentialDumpAndPumpRecognized;
 use App\Domain\Event\TransactionWasCached;
 use App\Domain\Event\TransactionWasRegistered;
+use App\Infrastructure\Repository\PDOCryptocurrencyRepository;
 
 class CryptocurrencyTransaction extends EventSourcedAggregateRoot
 {
-    private TransactionId $id;
-    private Address $address;
+    private Id $id;
     private Name $name;
     private Price $price;
     private Chain $chain;
@@ -27,42 +28,39 @@ class CryptocurrencyTransaction extends EventSourcedAggregateRoot
     private int $repetitions;
     private ?Url $url;
 
-    private function __construct(TransactionId $transactionId)
+    private function __construct(Id $transactionId)
     {
         $this->id = $transactionId;
     }
 
     public static function writeNewFrom(
-        Address $address,
+        Id $id,
         Name    $name,
         Price   $price,
         Chain   $chain
-    ): self {
-        $transactionId = TransactionId::create();
-        $cryptocurrencyTransaction = new static($transactionId);
+    ): self
+    {
+        $cryptocurrencyTransaction = new static($id);
         $cryptocurrencyTransaction->recordAndApply(
             new TransactionWasCached(
-            $transactionId,
-            $address,
-            $name,
-            $chain,
-            $price,
-        )
+                $id,
+                $name,
+                $chain,
+                $price,
+            )
         );
 
         return $cryptocurrencyTransaction;
     }
 
     public static function fromParams(
-        TransactionId $transactionId,
-        ?Address      $address,
-        ?Name         $name,
-        ?Price        $price,
-        ?Chain        $chain
+        Id       $transactionId,
+        ?Name    $name,
+        ?Price   $price,
+        ?Chain   $chain
     ): self
     {
         $transaction = new static($transactionId);
-        $transaction->address = $address;
         $transaction->name = $name;
         $transaction->price = $price;
         $transaction->chain = $chain;
@@ -71,7 +69,12 @@ class CryptocurrencyTransaction extends EventSourcedAggregateRoot
 
     public function registerTransaction(): void
     {
-        $transactionWasRegistered = new TransactionWasRegistered($this->address());
+        $transactionWasRegistered = new TransactionWasRegistered($this->id());
+
+        $command = new RegisterTransaction($this);
+        $repository = new PDOCryptocurrencyRepository();
+        $commandHandler = new RegisterTransactionHandler($repository);
+        $commandHandler->handle($command);
         $this->recordApplyAndPublishThat($transactionWasRegistered);
     }
 
@@ -91,8 +94,9 @@ class CryptocurrencyTransaction extends EventSourcedAggregateRoot
 
     public static function reconstitute(
         EventStream $events
-    ): EventSourcedAggregateRoot {
-        $cryptocurrencyTransaction = new static(new TransactionId($events->getAggregateId()));
+    ): EventSourcedAggregateRoot
+    {
+        $cryptocurrencyTransaction = new static(new CryptocurrencyTransaction($events->getAggregateId()));
         $cryptocurrencyTransaction->replay($events);
 
         return $cryptocurrencyTransaction;
@@ -101,7 +105,6 @@ class CryptocurrencyTransaction extends EventSourcedAggregateRoot
     public function applyTransactionWasCached(TransactionWasCached $event): void
     {
         $this->id = $event->id();
-        $this->address = $event->address();
         $this->name = $event->name();
         $this->chain = $event->chain();
         $this->price = $event->price();
@@ -123,15 +126,11 @@ class CryptocurrencyTransaction extends EventSourcedAggregateRoot
         $this->repetitions = $event->repetitions();
     }
 
-    public function id(): TransactionId
+    public function id(): Id
     {
         return $this->id;
     }
 
-    public function address(): Address
-    {
-        return $this->address;
-    }
 
     public function name(): Name
     {

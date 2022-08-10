@@ -2,10 +2,6 @@
 
 namespace App\Application\Service;
 
-use App\Domain\Entity\Token;
-use App\Domain\Query\QueryCompleteTransactions;
-use App\Domain\QueryHandler\QueryCompleteTransactionsHandler;
-use App\Infrastructure\Repository\PDOCryptocurrencyRepository;
 
 class SendAlerts
 {

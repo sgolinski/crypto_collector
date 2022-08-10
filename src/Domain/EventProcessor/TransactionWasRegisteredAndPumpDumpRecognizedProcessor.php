@@ -6,7 +6,7 @@ namespace App\Domain\EventProcessor;
 
 use App\Domain\EventHandler\TransactionWasCachedEventHandler;
 
-class TransactionWasCachedEventProcessor
+class TransactionWasRegisteredAndPumpDumpRecognizedProcessor
 {
     private TransactionWasCachedEventHandler $eventHandler;
 

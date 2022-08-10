@@ -23,4 +23,5 @@ $query = new QueryTransactionsFromWebElements($webElements);
 $cached = $queryHandler->__invoke($query);
 $eventHandler = new TransactionWasCachedEventHandler($cacheRepository);
 $eventProcessor = new TransactionWasCachedEventProcessor($eventHandler);
+
 $eventProcessor->process($cached);

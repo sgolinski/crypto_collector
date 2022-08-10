@@ -2,6 +2,7 @@
 
 namespace App\Domain\QueryHandler;
 
+use App\CryptocurrencyTransaction;
 use App\Domain\Query\QueryTransactionById;
 use App\Infrastructure\Repository\CryptocurrencyRepository;
 
@@ -14,8 +15,8 @@ class QueryTransactionByIdHandler
         $this->cryptocurrencyRepository = $cryptocurrencyRepository;
     }
 
-    public function __invoke(QueryTransactionById $cryptocurrencyQuery): bool
+    public function __invoke(QueryTransactionById $cryptocurrencyQuery): CryptocurrencyTransaction
     {
-        return $this->cryptocurrencyRepository->byId($cryptocurrencyQuery->cryptocurrencyId());
+        return $this->cryptocurrencyRepository->byId($cryptocurrencyQuery->cryptocurrencyId()->asString());
     }
 }

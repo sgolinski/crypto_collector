@@ -7,40 +7,32 @@ use App\Common\ValueObjects\Address;
 use App\Common\ValueObjects\Chain;
 use App\Common\ValueObjects\Name;
 use App\Common\ValueObjects\Price;
-use App\Common\ValueObjects\TransactionId;
+use App\Common\ValueObjects\Id;
 use DateTimeImmutable;
 
 class TransactionWasCached implements DomainEvent
 {
-    private TransactionId $id;
-    private Address $address;
+    private Id $id;
     private Name $name;
     private Chain $chain;
     private Price $price;
     private int $repetitions = 0;
 
     public function __construct(
-        TransactionId $transactionId,
-        Address       $address,
-        Name          $name,
-        Chain         $chain,
-        Price         $price
+        Id      $id,
+        Name    $name,
+        Chain   $chain,
+        Price   $price
     ) {
-        $this->id = $transactionId;
-        $this->address = $address;
+        $this->id = $id;
         $this->name = $name;
         $this->chain = $chain;
         $this->price = $price;
     }
 
-    public function id(): TransactionId
+    public function id(): Id
     {
         return $this->id;
-    }
-
-    public function address(): Address
-    {
-        return $this->address;
     }
 
     public function name(): Name
