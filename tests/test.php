@@ -11,7 +11,7 @@ use App\ProcessManager;
 
 $processManager = new ProcessManager();
 $pantherREpository = new PantherCryptocurrencyRepository();
-$processManager->setRepository($pantherREpository);
+$processManager->settingRepository($pantherREpository);
 $webElements = $processManager->webElements();
 
 $cacheRepository = new CacheRepository();

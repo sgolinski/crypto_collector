@@ -2,6 +2,8 @@
 
 namespace App\Infrastructure\Repository;
 
+use App\CryptocurrencyTransaction;
+use App\Domain\Event\AggregateRoot;
 use Elastic\Transport\Serializer\JsonSerializer;
 use Predis\Client;
 
@@ -27,7 +29,7 @@ class SnapshotRepository
             return null;
         }
 
-        $metadata = (array)$this->serializer->unserialize($data);
+        $metadata = $this->serializer->unserialize($data, CryptocurrencyTransaction::class);
 
         $snapshot = (array)$metadata['snapshot'];
 

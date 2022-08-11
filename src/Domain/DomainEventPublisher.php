@@ -1,8 +1,7 @@
 <?php
 
 namespace App\Domain;
-
-use App\Common\Event\DomainEvent;
+use App\Domain\Event\DomainEvent;
 use App\Domain\Subscribers\Subscriber;
 
 use BadMethodCallException;

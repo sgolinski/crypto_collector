@@ -3,8 +3,8 @@
 namespace App\Domain\Command;
 
 use App\Common\ValueObjects\CryptocurrencyId;
-use App\Common\ValueObjects\Price;
-use App\Common\ValueObjects\Id;
+use App\Domain\ValueObjects\Id;
+use App\Domain\ValueObjects\Price;
 
 class ChangePrice
 {

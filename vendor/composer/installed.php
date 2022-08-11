@@ -5,7 +5,7 @@
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
-        'reference' => '1dc31292d86fbd40198302b6f6599bc81dddd671',
+        'reference' => 'cc9391fc8f91fd63daf192d00a6a63ad69c47975',
         'name' => 'szymon/crypto-collector',
         'dev' => true,
     ),
@@ -17,6 +17,15 @@
             'install_path' => __DIR__ . '/../alek13/slack',
             'aliases' => array(),
             'reference' => '9222449402df4e1e57d7850be87898b2c99803bd',
+            'dev_requirement' => false,
+        ),
+        'beberlei/assert' => array(
+            'pretty_version' => 'v3.3.2',
+            'version' => '3.3.2.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../beberlei/assert',
+            'aliases' => array(),
+            'reference' => 'cb70015c04be1baee6f5f5c953703347c0ac1655',
             'dev_requirement' => false,
         ),
         'brick/math' => array(
@@ -760,7 +769,7 @@
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
-            'reference' => '1dc31292d86fbd40198302b6f6599bc81dddd671',
+            'reference' => 'cc9391fc8f91fd63daf192d00a6a63ad69c47975',
             'dev_requirement' => false,
         ),
         'theseer/tokenizer' => array(

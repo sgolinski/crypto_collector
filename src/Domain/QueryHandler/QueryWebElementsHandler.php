@@ -2,9 +2,7 @@
 
 namespace App\Domain\QueryHandler;
 
-use App\Common\ValueObjects\Url;
 use App\Domain\Query\QueryWebElements;
-use App\Domain\Query\QueryHolders;
 use App\Infrastructure\Repository\RemoteCryptocurrencyRepository;
 use ArrayIterator;
 

@@ -2,12 +2,11 @@
 
 namespace App\Domain\Event;
 
-use App\Common\Event\DomainEvent;
-use App\Common\ValueObjects\Address;
-use App\Common\ValueObjects\Chain;
-use App\Common\ValueObjects\Name;
-use App\Common\ValueObjects\Price;
-use App\Common\ValueObjects\Id;
+
+use App\Domain\ValueObjects\Chain;
+use App\Domain\ValueObjects\Id;
+use App\Domain\ValueObjects\Name;
+use App\Domain\ValueObjects\Price;
 use DateTimeImmutable;
 
 class TransactionWasCached implements DomainEvent
@@ -16,14 +15,15 @@ class TransactionWasCached implements DomainEvent
     private Name $name;
     private Chain $chain;
     private Price $price;
-    private int $repetitions = 0;
+
 
     public function __construct(
-        Id      $id,
-        Name    $name,
-        Chain   $chain,
-        Price   $price
-    ) {
+        Id    $id,
+        Name  $name,
+        Chain $chain,
+        Price $price,
+    )
+    {
         $this->id = $id;
         $this->name = $name;
         $this->chain = $chain;
@@ -55,13 +55,4 @@ class TransactionWasCached implements DomainEvent
         return new DateTimeImmutable();
     }
 
-    public function noticeRepetitions(): void
-    {
-        $this->repetitions++;
-    }
-
-    public function repetitions(): int
-    {
-        return $this->repetitions;
-    }
 }

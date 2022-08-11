@@ -2,7 +2,7 @@
 
 namespace App\Infrastructure\Repository;
 
-use App\Common\ValueObjects\Url;
+use App\Domain\ValueObjects\Url;
 use ArrayIterator;
 
 interface RemoteCryptocurrencyRepository

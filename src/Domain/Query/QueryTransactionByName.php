@@ -2,7 +2,7 @@
 
 namespace App\Domain\Query;
 
-use App\Common\ValueObjects\Name;
+use App\Domain\ValueObjects\Name;
 use InvalidArgumentException;
 
 class QueryTransactionByName

@@ -2,33 +2,35 @@
 
 namespace App\Infrastructure\Persistence\Redis;
 
-class RedisPostRepository implements PostRepository
+use App\CryptocurrencyTransaction;
+use App\Domain\Event\AggregateRoot;
+use App\Domain\ValueObjects\Id;
+use App\Infrastructure\Repository\CryptocurrencyRepository;
+use Predis\Client;
+
+class RedisPostRepository implements CryptocurrencyRepository
 {
-    private $client;
+    private Client $client;
 
     public function __construct(Client $client)
     {
         $this->client = $client;
     }
 
-    public function save(Post $aPost)
+    public function save(CryptocurrencyTransaction $aTransaction): void
     {
-        $this->client->hset(
-            'posts',
-            (string)$aPost->id(),
-            serialize($aPost)
-        );
+        $this->client->set($aTransaction->id()->asString(), serialize($aTransaction));
     }
 
-    public function remove(Post $aPost)
+    public function remove(CryptocurrencyTransaction $aTransaction)
     {
-        $this->client->hdel('posts', (string)$aPost->id());
+        $this->client->del($aTransaction->id()->asString());
     }
 
-    public function postOfId(PostId $anId)
+    public function postOfId(Id $anId)
     {
-        if ($data = $this->client->hget('posts', (string)$anId)) {
-            return unserialize($data);
+        if ($data = $this->client->get($anId->asString())) {
+            return unserialize($data, CryptocurrencyTransaction::class);
         }
 
         return null;
@@ -37,8 +39,8 @@ class RedisPostRepository implements PostRepository
     public function latestPosts(\DateTimeImmutable $sinceADate)
     {
         $latest = $this->filterPosts(
-            function (Post $post) use ($sinceADate) {
-                return $post->createdAt() > $sinceADate;
+            function (CryptocurrencyTransaction $transaction) use ($sinceADate) {
+                return $transaction->createdAt() > $sinceADate;
             }
         );
 
@@ -70,5 +72,20 @@ class RedisPostRepository implements PostRepository
     public function nextIdentity()
     {
         return new PostId();
+    }
+
+    public function save(CryptocurrencyTransaction $transaction): void
+    {
+        // TODO: Implement add() method.
+    }
+
+    public function byId(Id $id): AggregateRoot
+    {
+        // TODO: Implement byId() method.
+    }
+
+    public function addPotentialPumpAndDump(CryptocurrencyTransaction $transaction)
+    {
+        // TODO: Implement addPotentialPumpAndDump() method.
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Domain\Query;
 
-use App\Common\ValueObjects\Url;
+use App\Domain\ValueObjects\Url;
 
 class QueryHolders
 {

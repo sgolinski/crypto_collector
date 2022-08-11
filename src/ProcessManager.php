@@ -11,18 +11,19 @@ use ArrayIterator;
 class ProcessManager
 {
     private RemoteCryptocurrencyRepository $remoteCryptocurrencyRepository;
-    private StartCollectingTransactions $collectingTransactions;
-    private StartCollectingTransactionsHandler $collectingTransactionsHandlerHandler;
 
-    public function setRepository(PantherCryptocurrencyRepository $repository)
+    public function settingRepository(PantherCryptocurrencyRepository $repository):void
     {
         $this->remoteCryptocurrencyRepository = $repository;
     }
 
     public function webElements(): ArrayIterator
     {
-        $this->collectingTransactions = new StartCollectingTransactions();
-        $this->collectingTransactionsHandlerHandler = new StartCollectingTransactionsHandler($this->remoteCryptocurrencyRepository);
-        return $this->collectingTransactionsHandlerHandler->__invoke($this->collectingTransactions);
+        $collectingTransactions = new StartCollectingTransactions();
+        $collectingTransactionsHandlerHandler = new StartCollectingTransactionsHandler($this->remoteCryptocurrencyRepository);
+        return $collectingTransactionsHandlerHandler->__invoke($collectingTransactions);
     }
+
+
+
 }

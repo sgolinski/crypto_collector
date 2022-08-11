@@ -2,7 +2,7 @@
 
 namespace App\Infrastructure\Repository;
 
-use App\Common\Event\AggregateRoot;
+use App\Domain\Event\AggregateRoot;
 
 class Snapshot
 {

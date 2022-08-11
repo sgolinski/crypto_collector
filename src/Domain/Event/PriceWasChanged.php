@@ -2,10 +2,8 @@
 
 namespace App\Domain\Event;
 
-use App\Common\Event\DomainEvent;
-
-use App\Common\ValueObjects\Price;
-use App\Common\ValueObjects\Id;
+use App\Domain\ValueObjects\Id;
+use App\Domain\ValueObjects\Price;
 use DateTimeImmutable;
 
 class PriceWasChanged implements DomainEvent

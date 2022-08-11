@@ -2,49 +2,41 @@
 
 namespace App\Domain\EventHandler;
 
-use App\Common\Event\DomainEvent;
-use App\Common\ValueObjects\Chain;
-use App\Common\ValueObjects\Price;
 use App\CryptocurrencyTransaction;
 use App\Domain\Entity\Currency;
-use App\Domain\Entity\Names;
+use App\Domain\Event\DomainEvent;
+use App\Domain\Event\EventStore;
 use App\Domain\Event\TransactionWasCached;
+use App\Domain\ValueObjects\Chain;
+use App\Domain\ValueObjects\Price;
 use App\Infrastructure\Repository\CacheRepository;
 use InvalidArgumentException;
 
 class TransactionWasCachedEventHandler implements EventHandler
 {
     private CacheRepository $cacheRepository;
+    private EventStore $eventStore;
 
-    public function __construct(CacheRepository $repository)
+    public function __construct(CacheRepository $repository, EventStore $eventStore)
     {
         $this->cacheRepository = $repository;
+
     }
 
     public function handle(DomainEvent $event): void
     {
-
-
-        $repetitions = $event->repetitions();
-        if ($repetitions > 10) {
-            /** @var CryptocurrencyTransaction $transaction */
-            $transaction = $this->cacheRepository->findOneFromCache($event->id());
-            $transaction->registerPumpAndDumpRecognized($event->repetitions());
-            return;
-        }
         try {
-
+            $this->ensureIsRightInstance($event);
+            assert($event instanceof TransactionWasCached);
             $chain = $event->chain();
-            $this->ensureIsAllowedChain($chain);
             $price = $event->price();
             $this->ensurePriceIsHighEnough($chain, $price);
+
             /** @var CryptocurrencyTransaction $transaction */
             $transaction = $this->cacheRepository->findOneFromCache($event->id()->asString());
             $transaction->registerTransaction();
 
-
-        } catch (InvalidArgumentException $exception) {
-
+        } catch (InvalidArgumentException) {
         }
     }
 
@@ -58,15 +50,11 @@ class TransactionWasCachedEventHandler implements EventHandler
         }
     }
 
-    private function ensureIsAllowedChain(Chain $chain): void
+    private function ensureIsRightInstance(DomainEvent $event): void
     {
-        if (!in_array($chain->asString(), Names::ALLOWED_NAMES_FOR_CHAINS)) {
-            throw new InvalidArgumentException('Currency not allowed');
+        if ($event instanceof TransactionWasCached) {
+            return;
         }
-    }
-
-    public function supports(DomainEvent $event): bool
-    {
-        return $event instanceof TransactionWasCached;
+        throw  new InvalidArgumentException('Wrong instance');
     }
 }

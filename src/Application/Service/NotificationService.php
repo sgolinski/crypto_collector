@@ -15,11 +15,22 @@ class NotificationService
     {
         $this->slack = new SlackClient(self::HOOK);
     }
+
     public function sendMessage(
         string $text
-    ): void {
+    ): void
+    {
         $message = new Message();
         $message->setText($text);
         $this->slack->sendMessage($message);
+    }
+
+    private function template($transaction): string
+    {
+        return 'Name: ' . $transaction->name()->asString() . PHP_EOL .
+            'Drop price: ' . $transaction->price()->asFloat() . ' ' . $transaction->chain()->asString(). PHP_EOL .
+            'Coingecko: https://www.coingecko.com/en/coins/' . $transaction->id()->asString() . PHP_EOL .
+            'Poocoin: https://poocoin.app/tokens/' .$transaction->id()->asString() . PHP_EOL .
+            'Tokensniffer: https://tokensniffer.com/token/' .$transaction->id()->asString(). PHP_EOL;
     }
 }

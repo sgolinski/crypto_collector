@@ -2,11 +2,9 @@
 
 namespace App\Domain\Event;
 
-use App\Common\Event\DomainEvent;
-use App\Common\ValueObjects\Address;
-use App\Common\ValueObjects\Id;
-use App\Common\ValueObjects\Url;
 use App\Domain\Entity\Urls;
+use App\Domain\ValueObjects\Id;
+use App\Domain\ValueObjects\Url;
 use DateTimeImmutable;
 
 class TransactionWasRegistered implements DomainEvent

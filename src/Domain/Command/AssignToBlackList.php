@@ -2,7 +2,7 @@
 
 namespace App\Domain\Command;
 
-use App\Common\ValueObjects\Id;
+use App\Domain\ValueObjects\Id;
 
 class AssignToBlackList
 {

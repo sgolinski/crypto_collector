@@ -2,9 +2,8 @@
 
 namespace App\Domain\Action;
 
-use App\Common\ValueObjects\Url;
 use App\Domain\Entity\Urls;
-use App\Infrastructure\Repository\PantherCryptocurrencyRepository;
+use App\Domain\ValueObjects\Url;
 
 class StartCollectingTransactions
 {

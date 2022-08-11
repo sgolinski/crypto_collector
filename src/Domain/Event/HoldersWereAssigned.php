@@ -2,9 +2,8 @@
 
 namespace App\Domain\Event;
 
-use App\Common\Event\DomainEvent;
-use App\Common\ValueObjects\Id;
-use App\Common\ValueObjects\Holders;
+use App\Domain\ValueObjects\Holders;
+use App\Domain\ValueObjects\Id;
 use DateTimeImmutable;
 
 class HoldersWereAssigned implements DomainEvent

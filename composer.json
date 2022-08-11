@@ -27,7 +27,8 @@
         "ext-pdo": "*",
         "ext-sockets": "*",
         "alek13/slack": "^2.2",
-        "symfony/css-selector": "^6.1"
+        "symfony/css-selector": "^6.1",
+        "beberlei/assert": "^3.3"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.5"

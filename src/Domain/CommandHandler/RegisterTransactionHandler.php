@@ -3,7 +3,6 @@
 namespace App\Domain\CommandHandler;
 
 use App\Domain\Command\RegisterTransaction;
-use App\Domain\Entity\Token;
 use App\Infrastructure\Repository\CryptocurrencyRepository;
 
 class RegisterTransactionHandler
@@ -16,6 +15,6 @@ class RegisterTransactionHandler
     }
     public function handle(RegisterTransaction $command): void
     {
-        $this->cryptocurrencyRepository->add($command->transaction());
+        $this->cryptocurrencyRepository->save($command->transaction());
     }
 }

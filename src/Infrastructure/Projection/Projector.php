@@ -2,7 +2,9 @@
 
 namespace App\Infrastructure\Projection;
 
-use App\Projection;
+
+
+use App\Domain\Event\DomainEvent;
 
 class Projector
 {

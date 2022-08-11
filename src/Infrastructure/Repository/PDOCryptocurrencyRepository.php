@@ -2,14 +2,13 @@
 
 namespace App\Infrastructure\Repository;
 
-use App\Common\ValueObjects\Address;
-use App\Common\ValueObjects\Chain;
-use App\Common\ValueObjects\Holders;
-use App\Common\ValueObjects\Name;
-use App\Common\ValueObjects\Price;
-use App\Common\ValueObjects\Id;
 use App\CryptocurrencyTransaction;
-use App\Infrastructure\Exception\UnableToCreateCryptocurrencyTransactionException;
+use App\Domain\Event\EventStore;
+use App\Domain\ValueObjects\Chain;
+use App\Domain\ValueObjects\Holders;
+use App\Domain\ValueObjects\Id;
+use App\Domain\ValueObjects\Name;
+use App\Domain\ValueObjects\Price;
 use DateTimeImmutable;
 use Exception;
 use PDO;
@@ -19,8 +18,11 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
 {
     private $db;
 
-    public function __construct()
+    private EventStore $eventStore;
+
+    public function __construct(EventStore $eventStore)
     {
+        $this->eventStore = $eventStore;
         try {
             $this->db = new PDO("pgsql:host=192.168.178.36;port=5432;dbname=crypto", 'root', 'alerts', array(
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -29,38 +31,93 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
             //$p->exec('SET NAMES utf8');
         } catch (PDOException $e) {
             print "Error!: " . $e->getMessage() . "<br/>";
-            die();
+
         }
     }
 
-    public function add(CryptocurrencyTransaction $transaction): void
+
+    public function save(CryptocurrencyTransaction $transaction): void
     {
 
         $this->db->beginTransaction();
 
-        $sql = 'INSERT INTO potential_drop_cryptocurrency (cryptocurrency_id, name,price,chain,holders,percentage,occured_on) VALUES (?,?, ?,?,null,null,NOW())';
+        $sql = 'INSERT INTO transactions (transaction_id, name,price,chain,holders,occured_on)
+                VALUES (:id,:name,:price,:chain,null,NOW())
+                ON CONFLICT (transaction_id) DO UPDATE
+                SET transaction_id = :id,
+                    name = :name,
+                    price = :price,
+                    chain = :chain,
+                    holders = null,
+                    occured_on = NOW()
+                    WHERE  EXTRACT(MINUTE FROM current_timestamp) - EXTRACT(MINUTE FROM (SELECT occured_on FROM transactions WHERE transaction_id=:id)) > 1200';
+
         try {
             $stm = $this->db->prepare(
                 $sql
             );
 
-            $stm->execute([
-                $transaction->id()->asString(),
-                $transaction->name()->asString(),
-                $transaction->price()->asFloat(),
-                $transaction->chain()->asString(),
-            ]);
+            $id = $transaction->id()->asString();
+            $name = $transaction->name()->asString();
+            $price = $transaction->price()->asFloat();
+            $chain = $transaction->chain()->asString();
+
+            $stm->bindParam(":id", $id);
+            $stm->bindParam(":name", $name);
+            $stm->bindParam(":price", $price);
+            $stm->bindParam(":chain", $chain);
+            $stm->execute();
             $this->db->commit();
+
         } catch (Exception $e) {
             $this->db->rollback();
-            throw new UnableToCreateCryptocurrencyTransactionException($e);
+            echo $e->getMessage() . PHP_EOL;
+        }
+    }
+
+    public function addPotentialPumpAndDump(CryptocurrencyTransaction $transaction)
+    {
+        $this->db->beginTransaction();
+
+        $sql = 'INSERT INTO transactions (transaction_id, name,price,chain,holders,occured_on)
+                VALUES (:id,:name,:price,:chain,null,NOW())
+                ON CONFLICT (transaction_id) DO UPDATE
+                SET transaction_id = :id,
+                    name = :name,
+                    price = :price,
+                    chain = :chain,
+                    holders = null
+                    occured_on = NOW()';
+
+        try {
+            $stm = $this->db->prepare(
+                $sql
+            );
+
+            $id = $transaction->id()->asString();
+            $name = $transaction->name()->asString();
+            $price = $transaction->price()->asFloat();
+            $chain = $transaction->chain()->asString();
+
+            $stm->bindParam(":id", $id);
+            $stm->bindParam(":name", $name);
+            $stm->bindParam(":price", $price);
+            $stm->bindParam(":chain", $chain);
+            $stm->execute();
+            $this->db->commit();
+
+        } catch (Exception $e) {
+            $this->db->rollback();
+            echo $e->getMessage() . PHP_EOL;
         }
     }
 
 
     public function update($id, $price): void
     {
-        $sql = 'UPDATE potential_drop_cryptocurrency SET price = ? AND occured_on = NOW() WHERE  cryptocurrency_id = ? AND isBlacklisted = false ';
+        $sql = 'UPDATE transactions SET price = ? 
+                                    AND occured_on = NOW() 
+WHERE  cryptocurrency_id = ? AND isBlacklisted = false ';
         $stm = $this->db->prepare($sql);
 
         $stm->execute();
@@ -68,31 +125,47 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
 
     public function byComplete(Name $name): mixed
     {
-        $sql = 'SELECT isComplete, isBlacklisted FROM potential_drop_cryptocurrency WHERE name = ?';
+        $sql = 'SELECT isComplete, isBlacklisted FROM transactions WHERE name = ?';
         $stm = $this->db->prepare($sql);
         $stm->execute([$name]);
 
         return $stm->fetch();
     }
 
-    public function byName(Name $name): bool
-    {
-        $stm = $this->db->prepare(
-            'SELECT cryptocurrency_id FROM potential_drop_cryptocurrency WHERE name = :name'
-        );
-        $stm->bindParam(':name', $name);
 
+    public function byCompleted(Id $id): mixed
+    {
+        $events = $this->eventStore->getEventsFor($id->asString());
+        if ($events !== null) {
+            return CryptocurrencyTransaction::reconstitute($events);
+        }
+
+        $param = $id->asString();
+
+        $sql = 'SELECT isComplete, isBlacklisted FROM transactions WHERE id = :id';
+        $stm = $this->db->prepare($sql);
+        $stm->bindParam(":id", $param);
         $stm->execute();
 
-        return $stm->rowCount();
+        return $this->format($stm->fetch());
     }
 
-    public function byId(string $id): CryptocurrencyTransaction
+
+    public function byId(Id $id): CryptocurrencyTransaction
     {
+
+        $events = $this->eventStore->getEventsFor($id->asString());
+
+        if ($events !== null) {
+            return CryptocurrencyTransaction::reconstitute($events);
+        }
+
+
         $stm = $this->db->prepare(
-            'SELECT * FROM potential_drop_cryptocurrency WHERE cryptocurrency_id = :id'
+            'SELECT * FROM transactions WHERE cryptocurrency_id = :id'
         );
-        $stm->bindParam(':id', $id);
+        $param = $id->asString();
+        $stm->bindParam(':id', $param);
 
         $stm->execute();
 
@@ -101,14 +174,14 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
 
     public function addToBlackList(Id $id): void
     {
-        $sql = 'UPDATE potential_drop_cryptocurrency SET isBlacklisted = true WHERE  cryptocurrency_id = ? AND isBlacklisted=false';
+        $sql = 'UPDATE transactions SET isBlacklisted = true WHERE  cryptocurrency_id = ? AND isBlacklisted=false';
         $stm = $this->db->prepare($sql);
         $stm->execute([$id]);
     }
 
     public function updateHolders(Id $id, Holders $holders)
     {
-        $sql = 'UPDATE potential_drop_cryptocurrency SET holders = :holders, occured_on = NOW(), isComplete = true WHERE  cryptocurrency_id = :id AND isComplete = false AND isBlacklisted=false ';
+        $sql = 'UPDATE transactions SET holders = :holders, occured_on = NOW(), isComplete = true WHERE  cryptocurrency_id = :id AND isComplete = false AND isBlacklisted=false ';
         $stm = $this->db->prepare($sql);
         $stm->bindParam(':holders', $holders);
         $stm->bindParam(':id', $id);
@@ -117,7 +190,7 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
 
     public function updateAlert(Id $id): void
     {
-        $sql = 'UPDATE potential_drop_cryptocurrency SET isAlertSent =true , occured_on = NOW() WHERE  cryptocurrency_id = :id AND isComplete =true AND isBlacklisted=false ';
+        $sql = 'UPDATE transactions SET isAlertSent =true , occured_on = NOW() WHERE  cryptocurrency_id = :id AND isComplete =true AND isBlacklisted=false ';
         $stm = $this->db->prepare($sql);
         $stm->bindParam(':id', $id);
         $stm->execute();
@@ -126,7 +199,9 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
 
     public function findAllNotComplete(): array
     {
-        $sql = 'SELECT * FROM potential_drop_cryptocurrency WHERE isComplete = false AND isBlacklisted = false ';
+
+        $this->eventStore->findAllNotComplete();
+        $sql = 'SELECT * FROM transactions';
         $stm = $this->db->prepare($sql);
         $stm->execute();
         return $this->createCollectionFrom($stm->fetchAll());
@@ -134,7 +209,7 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
 
     public function findAllCompletedNotSent(): array
     {
-        $sql = 'SELECT * FROM potential_drop_cryptocurrency WHERE isComplete = true AND isBlacklisted = false AND isAlertSent = false';
+        $sql = 'SELECT * FROM transactions WHERE isComplete = true AND isBlacklisted = false AND isAlertSent = false';
         $stm = $this->db->prepare($sql);
         $stm->execute();
         return $this->createCollectionFrom($stm->fetchAll());
@@ -156,16 +231,9 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
             return null;
         }
 
-
-        $cryptocurrency_id = null;
-
-        if (isset($result['cryptocurrency_id'])) {
-            $cryptocurrency_id = Id::fromString($result['cryptocurrency_id']);
-        }
-
-        $address = null;
-        if (isset($result['address'])) {
-            $address = Address::fromString($result['address']);
+        $transaction_id = null;
+        if (isset($result['transaction_id'])) {
+            $transaction_id = Id::fromString($result['transaction_id']);
         }
 
         $name = null;
@@ -200,10 +268,8 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
             $isBlacklisted = (bool)$result['isBlacklisted'];
         }
 
-        $transactionId = Id::fromString($cryptocurrency_id);
         $transaction = CryptocurrencyTransaction::fromParams(
-            $transactionId,
-            $address,
+            $transaction_id,
             $name,
             $price,
             $chain,
@@ -211,4 +277,5 @@ class PDOCryptocurrencyRepository implements CryptocurrencyRepository
 
         return $transaction;
     }
+
 }

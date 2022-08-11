@@ -2,19 +2,18 @@
 
 namespace App\Domain\Query;
 
-use App\Common\ValueObjects\CryptocurrencyId;
+use App\Domain\ValueObjects\Id;
 use InvalidArgumentException;
 
 class QueryTransactionById
 {
-    private CryptocurrencyId $cryptocurrencyId;
+    private Id $cryptocurrencyId;
 
-    public function __construct(CryptocurrencyId $cryptocurrencyId)
+    public function __construct(Id $cryptocurrencyId)
     {
         $this->cryptocurrencyId = $cryptocurrencyId;
     }
-
-    public function cryptocurrencyId(): CryptocurrencyId
+    public function cryptocurrencyId(): Id
     {
         return $this->cryptocurrencyId;
     }

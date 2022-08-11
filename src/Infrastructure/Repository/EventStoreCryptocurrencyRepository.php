@@ -1,12 +1,13 @@
 <?php
 
-namespace App\Repository;
+namespace App\Infrastructure\Repository;
 
-use App\Common\Event\EventStore;
-use App\Common\ValueObjects\CryptocurrencyId;
+use App\CryptocurrencyTransaction;
+use App\Domain\Event\AggregateRoot;
+use App\Domain\Event\EventStore;
 use App\Domain\Event\Sourcing\EventStream;
+use App\Domain\ValueObjects\Id;
 use App\Infrastructure\Projection\Projector;
-use App\Model\Cryptocurrency;
 
 class EventStoreCryptocurrencyRepository implements CryptocurrencyRepository
 {
@@ -24,18 +25,18 @@ class EventStoreCryptocurrencyRepository implements CryptocurrencyRepository
         $this->projector = $projector;
     }
 
-    public function byId(CryptocurrencyId $id): Cryptocurrency
+    public function byId(Id $id): AggregateRoot
     {
         $snapshot = $this->snapshotRepository->byId($id->id());
 
         if (null === $snapshot) {
-            /** @var Cryptocurrency */
-            return Cryptocurrency::reconstitute(
+            /** @var CryptocurrencyTransaction */
+            return CryptocurrencyTransaction::reconstitute(
                 $this->eventStore->getEventsFor($id->id())
             );
         }
 
-        /** @var Cryptocurrency */
+        /** @var CryptocurrencyTransaction */
         $cryptocurrency = $snapshot->aggregate();
 
         $cryptocurrency->replay(
@@ -45,12 +46,12 @@ class EventStoreCryptocurrencyRepository implements CryptocurrencyRepository
         return $cryptocurrency;
     }
 
-    public function save(Cryptocurrency $cryptocurrency): void
+    public function save(CryptocurrencyTransaction $transaction): void
     {
-        $id = $cryptocurrency->id();
+        $id = $transaction->id();
 
-        $events = $cryptocurrency->recordedEvents();
-        $cryptocurrency->clearEvents();
+        $events = $transaction->recordedEvents();
+        $transaction->clearEvents();
 
         $this->eventStore->append(
             new EventStream($id->id(), $events)
@@ -66,7 +67,7 @@ class EventStoreCryptocurrencyRepository implements CryptocurrencyRepository
             $this->snapshotRepository->save(
                 $id->id(),
                 new Snapshot(
-                    $cryptocurrency,
+                    $transaction,
                     $version
                 )
             );
@@ -75,8 +76,4 @@ class EventStoreCryptocurrencyRepository implements CryptocurrencyRepository
         $this->projector->project($events);
     }
 
-    public function add(Cryptocurrency $cryptocurrency): void
-    {
-        // TODO: Implement add() method.
-    }
 }

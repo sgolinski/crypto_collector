@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domain\EventProcessor;
 
-use App\Domain\EventHandler\TransactionWasCachedEventHandler;
+use App\Domain\EventHandler\TransactionWasRegisteredEventHandler;
 
 class TransactionWasRegisteredAndPumpDumpRecognizedProcessor
 {
-    private TransactionWasCachedEventHandler $eventHandler;
+    private TransactionWasRegisteredEventHandler $eventHandler;
 
-    public function __construct(TransactionWasCachedEventHandler $handler)
+    public function __construct(TransactionWasRegisteredEventHandler $handler)
     {
         $this->eventHandler = $handler;
     }
@@ -18,6 +18,9 @@ class TransactionWasRegisteredAndPumpDumpRecognizedProcessor
     public function process(array $transactions): void
     {
         foreach ($transactions as $id => $transaction) {
+            var_dump($transaction);
+
+            die();
             foreach ($transaction->recordedEvents() as $event) {
                 $this->eventHandler->handle($event);
 

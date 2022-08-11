@@ -2,21 +2,29 @@
 
 namespace App;
 
-use App\Common\Event\EventSourcedAggregateRoot;
-use App\Common\Event\Sourcing\EventStream;
-use App\Common\ValueObjects\Chain;
-use App\Common\ValueObjects\Holders;
-use App\Common\ValueObjects\Name;
-use App\Common\ValueObjects\Price;
-use App\Common\ValueObjects\Id;
-use App\Common\ValueObjects\Url;
+use App\Domain\Command\RegisterPotentialPumpAndDump;
 use App\Domain\Command\RegisterTransaction;
+use App\Domain\CommandHandler\RegisterPotentialPumpAndDumpHandler;
 use App\Domain\CommandHandler\RegisterTransactionHandler;
+use App\Domain\Event\EventSourcedAggregateRoot;
+use App\Domain\Event\EventStore;
 use App\Domain\Event\HoldersWereAssigned;
 use App\Domain\Event\PotentialDumpAndPumpRecognized;
+use App\Domain\Event\Sourcing\EventStream;
+use App\Domain\Event\TransactionRepeated;
 use App\Domain\Event\TransactionWasCached;
 use App\Domain\Event\TransactionWasRegistered;
+use App\Domain\ValueObjects\Chain;
+use App\Domain\ValueObjects\Holders;
+use App\Domain\ValueObjects\Id;
+use App\Domain\ValueObjects\Name;
+use App\Domain\ValueObjects\Price;
+use App\Domain\ValueObjects\Url;
 use App\Infrastructure\Repository\PDOCryptocurrencyRepository;
+use Assert\Assertion;
+use DateTimeImmutable;
+use Predis\Client;
+use Zumba\JsonSerializer\JsonSerializer;
 
 class CryptocurrencyTransaction extends EventSourcedAggregateRoot
 {
@@ -27,17 +35,24 @@ class CryptocurrencyTransaction extends EventSourcedAggregateRoot
     private ?Holders $holders;
     private int $repetitions;
     private ?Url $url;
+    private bool $isComplete;
+    private bool $isBlacklisted;
+    private EventStream $eventStream;
+    private $createdAt;
 
     private function __construct(Id $transactionId)
     {
         $this->id = $transactionId;
+        $this->repetitions = 1;
+        $this->eventStream = new EventStream($transactionId->asString(), $this->recordedEvents());
+        $this->createdAt = new DateTimeImmutable();
     }
 
     public static function writeNewFrom(
-        Id $id,
-        Name    $name,
-        Price   $price,
-        Chain   $chain
+        Id    $id,
+        Name  $name,
+        Price $price,
+        Chain $chain
     ): self
     {
         $cryptocurrencyTransaction = new static($id);
@@ -46,7 +61,7 @@ class CryptocurrencyTransaction extends EventSourcedAggregateRoot
                 $id,
                 $name,
                 $chain,
-                $price,
+                $price
             )
         );
 
@@ -54,10 +69,10 @@ class CryptocurrencyTransaction extends EventSourcedAggregateRoot
     }
 
     public static function fromParams(
-        Id       $transactionId,
-        ?Name    $name,
-        ?Price   $price,
-        ?Chain   $chain
+        Id    $transactionId,
+        Name  $name,
+        Price $price,
+        Chain $chain
     ): self
     {
         $transaction = new static($transactionId);
@@ -70,12 +85,21 @@ class CryptocurrencyTransaction extends EventSourcedAggregateRoot
     public function registerTransaction(): void
     {
         $transactionWasRegistered = new TransactionWasRegistered($this->id());
-
         $command = new RegisterTransaction($this);
-        $repository = new PDOCryptocurrencyRepository();
+        $redis = new Client('127.0.0.1');
+        $json = new JsonSerializer();
+        $eventStore = new EventStore($redis, $json);
+        $repository = new PDOCryptocurrencyRepository($eventStore);
         $commandHandler = new RegisterTransactionHandler($repository);
+
         $commandHandler->handle($command);
         $this->recordApplyAndPublishThat($transactionWasRegistered);
+    }
+
+    public function transactionRepeated(Price $price): void
+    {
+        $transactionRepeated = new TransactionRepeated($price);
+        $this->applyThat($transactionRepeated);
     }
 
     public function assignHolders(int $amountOfHolders): void
@@ -86,17 +110,34 @@ class CryptocurrencyTransaction extends EventSourcedAggregateRoot
         $this->recordApplyAndPublishThat($holdersWereAssigned);
     }
 
-    public function registerPumpAndDumpRecognized(int $repetitions)
+    public function noticeRepetitions(): void
     {
-        $potentialDumpAndPumpTransaction = new PotentialDumpAndPumpRecognized($repetitions);
-        $this->recordApplyAndPublishThat($potentialDumpAndPumpTransaction);
+        $this->repetitions++;
+
+        if ($this->repetitions >= 5) {
+            $this->registerPumpAndDumpRecognized();
+        }
+    }
+
+    private function registerPumpAndDumpRecognized(): void
+    {
+        $potentialDumpAndPumpTransaction = new PotentialDumpAndPumpRecognized();
+        $command = new RegisterPotentialPumpAndDump($this);
+        $redis = new Client('127.0.0.1');
+        $json = new JsonSerializer();
+        $eventStore = new EventStore($redis, $json);
+
+        $repository = new PDOCryptocurrencyRepository($eventStore);
+        $commandHandler = new RegisterPotentialPumpAndDumpHandler($repository);
+        $commandHandler->handle($command);
+        $this->recordThat($potentialDumpAndPumpTransaction);
     }
 
     public static function reconstitute(
         EventStream $events
     ): EventSourcedAggregateRoot
     {
-        $cryptocurrencyTransaction = new static(new CryptocurrencyTransaction($events->getAggregateId()));
+        $cryptocurrencyTransaction = new static(Id::fromString($events->getAggregateId()));
         $cryptocurrencyTransaction->replay($events);
 
         return $cryptocurrencyTransaction;
@@ -108,7 +149,6 @@ class CryptocurrencyTransaction extends EventSourcedAggregateRoot
         $this->name = $event->name();
         $this->chain = $event->chain();
         $this->price = $event->price();
-        $this->repetitions = $event->repetitions();
     }
 
     public function applyHoldersWereAssigned(HoldersWereAssigned $event): void
@@ -119,11 +159,6 @@ class CryptocurrencyTransaction extends EventSourcedAggregateRoot
     public function applyTransactionWasRegistered(TransactionWasRegistered $event): void
     {
         $this->url = $event->url();
-    }
-
-    public function applyPotentialDumpAndPumpRecognized(PotentialDumpAndPumpRecognized $event): void
-    {
-        $this->repetitions = $event->repetitions();
     }
 
     public function id(): Id
@@ -161,4 +196,10 @@ class CryptocurrencyTransaction extends EventSourcedAggregateRoot
     {
         return $this->holders;
     }
+
+    public function createdAt()
+    {
+        return $this->createdAt;
+    }
+
 }

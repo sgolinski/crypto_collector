@@ -3,6 +3,7 @@
 namespace App\Domain\QueryHandler;
 
 use App\CryptocurrencyTransaction;
+use App\Domain\Event\AggregateRoot;
 use App\Domain\Query\QueryTransactionById;
 use App\Infrastructure\Repository\CryptocurrencyRepository;
 
@@ -15,8 +16,8 @@ class QueryTransactionByIdHandler
         $this->cryptocurrencyRepository = $cryptocurrencyRepository;
     }
 
-    public function __invoke(QueryTransactionById $cryptocurrencyQuery): CryptocurrencyTransaction
+    public function __invoke(QueryTransactionById $cryptocurrencyQuery): AggregateRoot
     {
-        return $this->cryptocurrencyRepository->byId($cryptocurrencyQuery->cryptocurrencyId()->asString());
+        return $this->cryptocurrencyRepository->byId($cryptocurrencyQuery->cryptocurrencyId());
     }
 }
